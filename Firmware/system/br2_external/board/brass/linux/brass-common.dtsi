@@ -120,7 +120,7 @@
 			xlnx,all-outputs-2 = <0x0>;
 			xlnx,dout-default = <0x00000000>;
 			xlnx,dout-default-2 = <0x00000000>;
-			xlnx,gpio-width = <21>;
+			xlnx,gpio-width = <22>;
 			xlnx,gpio2-width = <32>;
 			xlnx,interrupt-present = <0x1>;
 			xlnx,is-dual = <0x0>;
@@ -128,7 +128,7 @@
 			xlnx,tri-default-2 = <0xFFFFFFFF>;
 
 			gpio-line-names =
-				"user2", "user3", "user4", "user5", "user6", "user8", 
+				"user2", "user3", "user4", "user5", "user6", "user6", "user8", 
 				"enc1_a", "enc1_b", "enc2_a", "enc2_b",
 				"adc_dith", "adc_pga", "adc_ofa",
 				"pwrbtn_on", "ext_pin1",
@@ -211,7 +211,7 @@
 
 	rotary@0 {
 		compatible = "rotary-encoder";
-		gpios = <&axi_gpio 6 0>, <&axi_gpio 7 0>;
+		gpios = <&axi_gpio 7 0>, <&axi_gpio 8 0>;
 		linux,axis = <0>;
 		rotary-encoder,encoding = "gray";
 		rotary-encoder,relative-axis;
@@ -219,7 +219,7 @@
 
 	rotary@1 {
 		compatible = "rotary-encoder";
-		gpios = <&axi_gpio 8 0>, <&axi_gpio 9 1>;
+		gpios = <&axi_gpio 9 0>, <&axi_gpio 10 1>;
 		linux,axis = <0>;
 		rotary-encoder,encoding = "gray";
 		rotary-encoder,relative-axis;
