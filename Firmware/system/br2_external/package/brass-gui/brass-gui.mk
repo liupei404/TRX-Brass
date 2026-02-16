@@ -5,7 +5,7 @@
 ################################################################################
 
 BRASS_GUI_VERSION = v0.6.0
-BRASS_GUI_SITE = https://github.com/strijar/brass_gui
+BRASS_GUI_SITE = https://github.com/liupei404/brass_gui
 BRASS_GUI_SITE_METHOD = git
 BRASS_GUI_GIT_SUBMODULES = YES
 BRASS_GUI_LICENSE = GPLv2
