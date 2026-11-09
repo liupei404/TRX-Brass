@@ -68,7 +68,6 @@ typedef enum {
 } split_mode_t;
 
 void radio_init(lv_obj_t *obj);
-bool radio_tick();
 radio_state_t radio_get_state();
 
 void radio_set_freq_rx(uint64_t freq);

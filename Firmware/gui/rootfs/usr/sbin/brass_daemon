@@ -1,11 +1,41 @@
 #!/bin/sh
+#
+# Starts the Brass GUI and restarts it after crashes, with a bounded backoff.
+#
 
 export PYTHONPATH="/usr/share/brass/python"
 
-while true; do 
-    /usr/sbin/brass_gui;
-    if [ $? -eq 1 ]
-    then
+GUI="/usr/sbin/brass_gui"
+MAX_FAILS=5
+WINDOW=60
+fails=0
+window_start=$(date +%s)
+
+while true; do
+    "$GUI"
+    rc=$?
+
+    # exit(1) is an intentional shutdown (main_exit / power_shutdown fallback)
+    if [ "$rc" -eq 1 ]; then
         exit 0
     fi
+
+    now=$(date +%s)
+
+    if [ $((now - window_start)) -ge "$WINDOW" ]; then
+        window_start=$now
+        fails=0
+    fi
+
+    fails=$((fails + 1))
+
+    if [ "$fails" -ge "$MAX_FAILS" ]; then
+        echo "brass_daemon: GUI failed $fails times within ${WINDOW}s, giving up" >&2
+        exit 1
+    fi
+
+    delay=$fails
+    [ "$delay" -gt 5 ] && delay=5
+    echo "brass_daemon: GUI exited with $rc, restart $fails in ${delay}s" >&2
+    sleep "$delay"
 done

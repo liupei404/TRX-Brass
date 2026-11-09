@@ -29,7 +29,7 @@ static void backlight_timer(lv_timer_t *t) {
 }
 
 static void set_brightness(int16_t value) {
-    if (brightness > 0) {
+    if (brightness >= 0) {
         char    str[8];
         int     len = snprintf(str, sizeof(str), "%i\n", 10 - value);
 
@@ -38,7 +38,7 @@ static void set_brightness(int16_t value) {
 }
 
 static void set_power(bool value) {
-    if (power > 0) {
+    if (power >= 0) {
         char    str[8];
         int     len = snprintf(str, sizeof(str), "%i\n", value ? 0 : 1);
         

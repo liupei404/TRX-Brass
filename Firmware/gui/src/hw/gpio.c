@@ -173,7 +173,7 @@ static void rf_5_init() {
             "c_04", "c_05", "c_06", "c_07"
         };
 
-        for (uint8_t i = 0; i < ATU_L_NUM; i++)
+        for (uint8_t i = 0; i < ATU_C_NUM; i++)
             atu_c[i] = init_line(chip, atu_c_gpio[i]);
     } else {
         LV_LOG_ERROR("Unable to open gpio chip 5");

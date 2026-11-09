@@ -187,6 +187,42 @@ git submodule update --init --recursive</pre>
   </div>
 </section>
 
+<section>
+  <h2>七、第二轮修复记录（2026-11-10）</h2>
+  <div class="body">
+    <p>按 <code>Docs/TRX-Brass-TODO.html</code> 继续处理「纯软件、无需硬件或产品决策」的未完成项，共 14 项。以下改动与第一节的开关机实现相互独立。</p>
+    <table>
+      <thead><tr><th style="width:28%">文件 / 条目</th><th>改动与解决的问题</th></tr></thead>
+      <tbody>
+        <tr><td><code>README.md</code>、<code>BUILDING.md</code><br><span class="tag t-new">新增</span> D01 / D03</td>
+          <td>补顶层项目说明与统一构建文档（三套构建链顺序、产物去向、MicroBlaze 固件位置、刷机与主机端测试命令）。</td></tr>
+        <tr><td><code>Firmware/gui/buildroot/README.md</code><br>D02</td>
+          <td>删除不存在的 <code>./install.sh</code> 步骤，补齐「必须先构建 Buildroot 系统」「需初始化 LVGL 子模块」等前置条件。</td></tr>
+        <tr><td><code>.gitignore</code><br><span class="tag t-new">新增</span> B06（部分）</td>
+          <td>忽略编辑器目录、本地构建产物与测试二进制，避免 <code>.vscode/</code> 等被误提交。CI 仍未建立。</td></tr>
+        <tr><td><code>Firmware/gui/src/hw/gpio.c</code><br>C01</td>
+          <td>初始化 <code>atu_c[]</code> 的循环上界由 <code>ATU_L_NUM</code> 改为 <code>ATU_C_NUM</code>，两数组长度不再耦合。</td></tr>
+        <tr><td><code>backlight.c</code>、<code>hw/power_meter.c</code><br>C02 / N04（部分）</td>
+          <td>全部 fd 有效性判断改为 <code>&gt;= 0</code> / <code>&lt; 0</code>，允许合法的 fd 0；修正 power_meter 中一处错误日志文案。<code>power_thread()</code> 空转问题仍需确认 <code>in2/curr2</code> 通道用途后处理。</td></tr>
+        <tr><td><code>Firmware/gui/src/fpga/dac.c</code><br>C03</td>
+          <td>把短写时的 <code>LV_LOG_WARN("Fix me")</code> 换成区分 <code>EINTR</code>、短写与写错误的处理，记录字节数并累计连续失败，首次达到 10 次上报错误。</td></tr>
+        <tr><td><code>radio.c</code>、<code>radio.h</code><br>F02</td>
+          <td>删除整个 <code>radio_tick()</code>（92 行 X6100 遗留注释死代码，含 <code>x6100_control_poweroff()</code>）及其声明；全仓已无残留引用。</td></tr>
+        <tr><td><code>Firmware/gui/buildroot/cmake.sh</code><br>N02</td>
+          <td>LVGL 8 的 <code>LV_CONF_BUILD_DISABLE_*</code> 改为 LVGL 9.5 的 <code>CONFIG_LV_BUILD_EXAMPLES/DEMOS/USE_THORVG_INTERNAL</code>，与顶层 CMakeLists 一致。</td></tr>
+        <tr><td><code>lv_drv_conf.h</code>、两份 <code>.gitmodules</code><br>B03 / N03</td>
+          <td>更新过时的 v8.2.0 版本声明；标注 <code>EVDEV_NAME /dev/input/event6</code> 为未编译的死配置；移除与 LVGL 9.5 检出不一致的 <code>release/v8.4</code> 分支声明，改由 gitlink 固定版本。</td></tr>
+        <tr><td><code>brass-gui.mk</code><br>B01</td>
+          <td><code>BRASS_GUI_LICENSE</code> 由 GPLv2 改为 LGPL-2.1-or-later，并补 <code>BRASS_GUI_LICENSE_FILES = LICENSE</code>。</td></tr>
+        <tr><td><code>rootfs/usr/sbin/brass_daemon</code><br>S02</td>
+          <td>把无退避的无限重启改为：保留 <code>exit(1)</code> 正常退出判定，崩溃时按次数递增退避（最长 5 秒），60 秒窗口内失败 5 次即停止并输出日志。</td></tr>
+      </tbody>
+    </table>
+    <p><b>验证</b>：<code>sh -n</code> 通过（brass_daemon、cmake.sh）；主机端单元测试 <code>power_test: 4/4 passed</code>；<code>backlight.c</code>、<code>hw/power_meter.c</code> 语法检查通过；<code>gpio.c</code> / <code>fpga/dac.c</code> / <code>radio.c</code> 因本机缺 <code>gpiod.h</code>、<code>liquid/liquid.h</code> 等目标依赖头文件止于预处理阶段（环境限制，非代码错误）；<code>git diff --check</code> 通过。完整固件编译仍需带 Buildroot 工具链与目标 sysroot 的环境。</p>
+    <div class="alert"><b>本轮未处理（需你决策或需目标环境）</b>：S01 默认 root 口令 / SSH 策略、F01 背光与 GPS 是否接线、F03/F04 记忆与 ATU/CW 键控实现、N01 Buildroot 依赖需实机验证、N05 lv_drivers 归属、H01-H03 硬件改板、D04-D08 其余文档、B02/B04/B05 构建重构、C05 测试体系、S03 镜像精简。</div>
+  </div>
+</section>
+
 <footer>
   <p>本记录对应分支 <code>feature/power-button</code>；所有路径相对仓库根目录。相关分析见 <code>Docs/TRX-Brass-TODO.html</code>（版本变更分析与待办清单）。</p>
   <p>本次未改动其它历史欠账（<code>radio_tick()</code> 死代码、背光/GPS 注释、root 默认口令等），它们仍记录在待办清单中。</p>

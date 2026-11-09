@@ -1,6 +1,7 @@
 /**
  * @file lv_drv_conf.h
- * Configuration file for v8.2.0
+ * Legacy lv_drivers configuration, kept for the LVGL 9.5 build.
+ * Only USE_XKB is used by this project (see src/keyboard.c).
  */
 
 /*
@@ -128,6 +129,11 @@
 #endif
 
 #if USE_EVDEV
+/*
+ * NOTE: this block is dead configuration. The evdev driver is not built
+ * (src/CMakeLists.txt only compiles ../lv_drivers/indev/xkb.c); the
+ * application registers /dev/input/event0..4 itself in src/main.c.
+ */
 #  define EVDEV_NAME   "/dev/input/event6"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
 #  define EVDEV_SWAP_AXES         1               /*Swap the x and y axes of the touchscreen*/
 

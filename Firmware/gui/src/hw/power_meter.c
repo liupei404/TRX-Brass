@@ -62,29 +62,29 @@ static void * power_thread(void *arg) {
 void power_meter_init() {
     fd_pa_v = open(POWER_PATH "in1_input", O_RDONLY);
 
-    if (fd_pa_v <= 0) {
+    if (fd_pa_v < 0) {
         LV_LOG_ERROR("Find PA voltage");
         return;
     }
 
     fd_pa_a = open(POWER_PATH "curr1_input", O_RDONLY);
 
-    if (fd_pa_a <= 0) {
+    if (fd_pa_a < 0) {
         LV_LOG_ERROR("Find PA current");
         return;
     }
 
     fd_pwr_v = open(POWER_PATH "in2_input", O_RDONLY);
 
-    if (fd_pwr_v <= 0) {
+    if (fd_pwr_v < 0) {
         LV_LOG_ERROR("Find power voltage");
         return;
     }
 
     fd_pwr_a = open(POWER_PATH "curr2_input", O_RDONLY);
 
-    if (fd_pwr_a <= 0) {
-        LV_LOG_ERROR("Find PA current");
+    if (fd_pwr_a < 0) {
+        LV_LOG_ERROR("Find power current");
         return;
     }
 
