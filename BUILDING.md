@@ -263,10 +263,21 @@ kill -TERM "$PID"                      # 只终止卡住的连接，不动 make
 与 `package/jpeg-turbo/jpeg-turbo.hash` 一致。实测终止后编译立即继续
 （`jpeg` Installing to target → `host-kmod`），`make` 没有退出，无需续编。
 
-> 进度（2026-11-10 05:13）：编译约 2 小时、日志约 52 MB、930+ 个 `>>>` 阶段，
-> `target/` 353 MB；`libnl` / `iw` / `jpeg-turbo` / `host-kmod` 等已过。续编日志
-> 无新的致命错误（旧的 boost hash 噪音是下载重试，已自愈）。`images/` 仍为空，
-> `sdcard.img` 要等内核、U-Boot、GUI 和 genimage 全部完成才出现。
+GitHub `.../files/<附件 id>/` 这类用户附件同理：`liberation 2.1.5` 从
+`github.com/liberationfonts/liberation-fonts/files/7261482/` 下载时 TLS 中断、
+重试很慢。同样先从 `sources.buildroot.net/liberation/` 取包放进 `dl/liberation/`，
+再终止卡住的 `wget`；sha256 `7191c669bf38899f73a2094ed00f7b800553364f90e2637010a69c0e268f25d0`
+与 `package/liberation/liberation.hash` 一致。实测 `make` 未退出，编译从
+`liberation` 继续到 `libgpiod` / `libxml2`。
+
+关键路径上的源码包现已全部缓存就绪：`linux`（212 MB）、`uboot`（23 MB）、
+`libcyaml` / `ext-liquid-dsp` / `libspecbleach` / `axis-fifo` / `jpeg-turbo` /
+`liberation` / `dosfstools`；`rhvoice` 是 git clone，已验证连通。
+
+> 进度（2026-11-10 05:17）：编译约 2 小时 05 分、日志约 52 MB、近千个 `>>>`
+> 阶段，`target/` 354 MB；`liberation` / `libgpiod` / `libxml2` 等已过。续编日志
+> 无新的致命错误。`images/` 仍为空，`sdcard.img` 要等内核、U-Boot、GUI 和
+> genimage 全部完成才出现。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
