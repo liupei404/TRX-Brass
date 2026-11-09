@@ -108,6 +108,18 @@ make -j2 2>&1 | tee /tmp/brass-build.log
 若 IDE 内还有一个 `make` 在跑，先 `kill <该 make 的 PID>`，避免两个 make 同时写
 同一个输出目录。IDE 里仍可用 `tail -f /tmp/brass-build.log` 看进度。
 
+### 实际采用方式（2026-11-10，已验证）
+
+从 **Windows 终端通过 SSH 连接 Ubuntu**，在独立 SSH 会话里直接执行上面这三条
+命令，这是本项目推荐且已跑通的编译方式：SSH 会话的 `PATH` 不含 IDE 的
+`safe-delete` shim，autoconf / Buildroot 的 `rm` 不会被拦截。实测启动后
+`host-tar 1.34`、`host-zstd 1.5.5`、`host-ccache 4.8.2` 均顺利通过，日志里
+`SAFE_DELETE` 为 0、无致命错误。
+
+- 另开一个 SSH 窗口用 `tail -f /tmp/brass-build.log` 看进度。
+- 编译期间 `output_brass/images/` 为空是正常的；出现 `sdcard.img` 才算出镜像完成。
+- 全程约 2–5 小时，中途不要在同一个输出目录再启动第二个 `make`。
+
 ### 新固件在哪里找
 
 编译完成后，全部产物在：

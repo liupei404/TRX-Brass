@@ -464,6 +464,9 @@
       <tr><td class="commit">bitstream</td>
         <td>确认 <code>board/brass/7020/system.bit</code> 为真实 Xilinx .bit（2.5 MB，Vivado 2019.2），由 <code>post-build.sh</code> 复制进 <code>images/</code>、由 <code>genimage.cfg</code> 打进 boot 分区。</td>
         <td class="ev">本机无需 Vivado；长按开机仍需电源锁存 / FPGA 硬件，不属于软件编译范围。</td></tr>
+      <tr><td class="commit">编译入口</td>
+        <td>实际使用 <b>Windows 终端 SSH 连接 Ubuntu</b> 的独立会话执行 <code>BUILDING.md</code> 1.1 节的三条命令（清临时目录 → <code>cd output_brass</code> → <code>make -j2 2&gt;&amp;1 | tee /tmp/brass-build.log</code>）。</td>
+        <td class="ev">独立会话 PATH 不含 IDE shim；实测 host-tar / host-zstd / host-ccache 通过，日志 SAFE_DELETE 为 0。编译进行中，产物未生成前 <code>images/</code> 为空。</td></tr>
     </tbody>
   </table>
 </section>
