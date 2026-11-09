@@ -1,0 +1,21 @@
+uutils coreutils (Ubuntu 25.10) dd rejects "conv=block" without cbs=N:
+  dd: conv=block or conv=unblock specified without cbs=N
+U-Boot 2023.1 redirects dd stderr to /dev/null, so an SPL build fails with
+a bare "Error 1" at spl/u-boot-spl-align.bin and no diagnostic in the log.
+
+conv=block is a no-op when cbs is unset (GNU dd), so dropping it keeps the
+output byte-identical: conv=sync still pads to bs=4, and the SPL binary is
+already 4-byte aligned. This works on both GNU dd and uutils dd.
+See BUILDING.md section 1.1.
+
+--- a/scripts/Makefile.spl
++++ b/scripts/Makefile.spl
+@@ -246,7 +246,7 @@
+ endif
+ 
+ $(obj)/$(SPL_BIN)-align.bin: $(obj)/$(SPL_BIN).bin
+-	@dd if=$< of=$@ conv=block,sync bs=4 2>/dev/null;
++	@dd if=$< of=$@ conv=sync bs=4 2>/dev/null;
+ 
+ spl/boot.bin: $(obj)/$(SPL_BIN)-align.bin FORCE
+ 	$(call if_changed,mkimage)
