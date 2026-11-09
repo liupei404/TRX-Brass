@@ -120,7 +120,7 @@ make -j2 2>&1 | tee /tmp/brass-build.log
 - 编译期间 `output_brass/images/` 为空是正常的；出现 `sdcard.img` 才算出镜像完成。
 - 全程约 2–5 小时，中途不要在同一个输出目录再启动第二个 `make`。
 
-### GCC 15 兼容性：host-m4 1.4.19
+### GCC 15 兼容性（4 处报错与统一处理）
 
 本机 `gcc 15.2.0` 默认按 C23 编译，Buildroot 2024.02 的 `host-m4 1.4.19`
 （gnulib）会把 `_GL_ATTRIBUTE_NODISCARD` 展开成 GCC 无法解析的
@@ -149,19 +149,26 @@ make -j2 2>&1 | tee -a /tmp/brass-build.log
 `__STDC_VERSION__ < 202311L` 时才 typedef。再往后 `host-gawk 5.3.0` 的
 `io.c:3389` 因 GCC 15 把 `incompatible-pointer-types` 升级为 error 而失败，
 已去掉 `( ssize_t(*)() ) read` 的旧式强转（3389、4449 两处直接赋 `read`，
-其签名与 `read_func` 一致）。以上三处都是本地构建目录改动、不进 git，
-都是 GCC 15 与 Buildroot 2024.02 老包的兼容问题，不是 GUI 代码问题；
-后续若还有同类报错，按日志定位改对应源码即可。想一次避开，可安装 gcc-14
-（默认仍是 gnu17）后重新全编译（本方案本次未实测）：
+其签名与 `read_func` 一致）。第四次是 `host-gmp 6.3.0` 的 configure 报
+`could not find a working compiler`（`long long reliability test 1`）：C23 把
+`void g()` 视为无参函数，测试代码传 6 个参数被判错。四处都是 GCC 15 默认 C23 /
+诊断升级与 Buildroot 2024.02 老包的兼容问题，不是 GUI 代码问题。
 
-```bash
-sudo apt install -y gcc-14 g++-14
-cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass
-make clean
-make HOSTCC=gcc-14 HOSTCXX=g++-14 -j2 2>&1 | tee /tmp/brass-build.log
+**不再逐包改源码，也不更换 gcc 版本**：已在仓库里的
+`Firmware/system/br2_external/external.mk` 给所有 host 包统一加编译参数：
+
+```make
+HOSTCC += -std=gnu17 -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion
+HOSTCXX += -std=gnu++17
 ```
 
-`make clean` 会清掉已编的 host 工具重新来，下载的源码缓存仍保留。
+`HOSTCC` / `HOSTCXX` 仍指向系统的 `gcc 15` / `g++ 15`，只是让 host 工具回到 C17
+模式、把老代码常见诊断降级为警告。已用 `make printvars VARS='HOSTCC HOSTCXX'`
+验证展开正确，`.config` 不变、不会全量重编。后续同类错误由这一处设置挡掉；
+`host-gmp` 的 configure 会在下次 `make` 时重新执行并自动通过，无需改它源码。
+
+前三处对本地构建目录的源码/生成文件修改仍保留着，但**以后重新全新编译不再需要**
+（统一参数已覆盖）；`buildroot-2024.02/` 本身未改动。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
