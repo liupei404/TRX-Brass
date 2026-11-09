@@ -86,6 +86,16 @@ tail -f /tmp/brass-build.log
 首次全编译（glibc 工具链 + Python3 + Linux 内核 + GUI）预计 2–5 小时；
 编译日志在 `/tmp/brass-build.log`，结果以日志为准。
 
+### 环境注意（IDE 会话）
+
+在 CodeBuddy / VS Code 的会话内直接启动 `make` 时，IDE 注入的删除保护
+（`safe-delete` shim 被放在 `PATH` 最前面）会连 autoconf / Buildroot 内部对
+临时文件的 `rm` 一起拦截，日志里出现大量 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`，
+可能造成后续步骤失败或临时文件堆积。完整编译建议在**系统终端**里执行上面同样的
+命令（其 `PATH` 不含 IDE 的 `safe-bin` shim），或先在会话内放行该保护；IDE 里
+仍可用 `tail -f /tmp/brass-build.log` 看进度。若已在 IDE 内启动了一个 `make`，
+换到终端前先 `kill <该 make 的 PID>`，避免两个 make 同时写同一个输出目录。
+
 ### 新固件在哪里找
 
 编译完成后，全部产物在：

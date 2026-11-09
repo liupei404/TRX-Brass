@@ -237,7 +237,7 @@ git submodule update --init --recursive</pre>
         <tr><td>功能边界</td><td>长按开机 / 电源自锁必须由电源锁存电路或 FPGA 完成（CPU 断电时无软件运行），GUI 只在启动时读取按键状态作诊断；此项不随编译改变。<code>mb.code</code> / <code>mb.data</code> 使用仓库内预编译文件，缺 <code>mb-gcc</code> 不影响出镜像。</td></tr>
       </tbody>
     </table>
-    <div class="alert"><b>状态</b>：文档在编译前完成同步；完整编译结果以 <code>/tmp/brass-build.log</code> 为准，N01 在日志确认前仍标为待实机验证。</div>
+    <div class="alert"><b>状态</b>：文档在编译前完成同步；完整编译结果以 <code>/tmp/brass-build.log</code> 为准，N01 在日志确认前仍标为待实机验证。另注意：IDE 会话的 <code>safe-delete</code> shim 会拦截构建内部的 <code>rm</code>（日志出现 <code>SAFE_DELETE_BULK_CONFIRM_REQUIRED</code>），完整编译建议在系统终端执行，详见 <code>BUILDING.md</code> 第 1.1 节。</div>
   </div>
 </section>
 
