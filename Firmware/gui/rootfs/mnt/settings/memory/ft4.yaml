@@ -1,0 +1,24 @@
+memory:
+- label: FT4 80m
+  work: {rx: 3575000, tx: 3575000, mode: usb}
+
+- label: FT4 40m
+  work: {rx: 7047500, tx: 7047500, mode: usb}
+
+- label: FT4 30m
+  work: {rx: 10140000, tx: 10140000, mode: usb}
+
+- label: FT4 20m
+  work: {rx: 14080000, tx: 14080000, mode: usb}
+
+- label: FT4 17m
+  work: {rx: 18104000, tx: 18104000, mode: usb}
+
+- label: FT4 15m
+  work: {rx: 21140000, tx: 21140000, mode: usb}
+
+- label: FT4 12m
+  work: {rx: 24919000, tx: 24919000, mode: usb}
+
+- label: FT4 10m
+  work: {rx: 28180000, tx: 28180000, mode: usb}

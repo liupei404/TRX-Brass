@@ -1,0 +1,30 @@
+memory:
+- label: FT8 160m
+  work: {rx: 1840000, tx: 1840000, mode: usb}
+
+- label: FT8 80m
+  work: {rx: 3573000, tx: 3573000, mode: usb}
+
+- label: FT8 60m
+  work: {rx: 5357000, tx: 5357000, mode: usb}
+
+- label: FT8 40m
+  work: {rx: 7074000, tx: 7074000, mode: usb}
+
+- label: FT8 30m
+  work: {rx: 10136000, tx: 10136000, mode: usb}
+
+- label: FT8 20m
+  work: {rx: 14074000, tx: 14074000, mode: usb}
+
+- label: FT8 17m
+  work: {rx: 18100000, tx: 18100000, mode: usb}
+
+- label: FT8 15m
+  work: {rx: 21074000, tx: 21074000, mode: usb}
+
+- label: FT8 12m
+  work: {rx: 24915000, tx: 24915000, mode: usb}
+
+- label: FT8 10m
+  work: {rx: 28074000, tx: 28074000, mode: usb}

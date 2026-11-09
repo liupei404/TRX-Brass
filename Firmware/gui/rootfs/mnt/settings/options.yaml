@@ -1,0 +1,130 @@
+operator:
+  qth:
+  callsign:
+
+audio:
+  speaker:
+    vol: 15
+    eq:
+    - {freq: 200, q: 1, gain: 0}
+    - {freq: 1200, q: 1, gain: 0}
+    - {freq: 2000, q: 1, gain: 0}
+  mic:
+    eq:
+    - {freq: 100, gain: 0}
+    - {freq: 300, gain: 0}
+    - {freq: 1000, gain: 0}
+    - {freq: 2000, gain: 0}
+    - {freq: 3000, gain: 0}
+    filter: {low: 100, high: 3000, transition: 100}
+  rec_format: mp3
+  denoise:
+    mode: off
+    before_agc: true
+    nr:
+      frame_size: 100
+      reduction_amount: 10
+      smoothing_factor: 50
+      whitening_factor: 0
+      noise_scaling_type: 0
+      noise_rescale: 2
+      post_filter_threshold: -10
+    emnr:
+      fft: 512
+      over: 8
+      gain_method: 2
+      npe_method: 0
+      trained_thresh: -0.5
+      trained_t2: 0.2
+
+spectrum:
+  beta: 0.7
+  filled: false
+  peak: false
+  peak_hold: 5000
+  peak_speed: 0.5
+
+control:
+  vol:
+  - vol
+  - pwr
+  - freq_mode
+  - split
+  mfk:
+  - filter_low
+  - filter_high
+  - spectrum_factor
+  long_vol: mute
+  long_mfk: recorder
+  long_app: app_settings
+  long_band_down: none
+  long_band_up: none
+
+rtty:
+  center: 800
+  shift: 170
+  rate: 45.45
+  reverse: false
+  bits: 5
+  snr: 3.0
+
+cw:
+  decoder: true
+  decoder_snr: 10.0
+  decoder_snr_gist: 3.0
+  decoder_peak_beta: 0.1
+  decoder_noise_beta: 0.8
+  key_speed: 15
+  key_ratio: 30
+  key_tone: 700
+  key_mode: manual
+  key_train: false
+  qsk_time: 100
+  iambic_mode: mode_a
+
+olivia:
+  tones: 32
+  band_width: 1000
+  band_lower: 500
+  sync_margin: 4
+  sync_integ: 4
+  sync_threshold: 3.0
+
+msg:
+  voice_period: 10
+  cw_period: 10
+
+hkeys:
+  hmic: MH-48
+  press_p:
+  - step_down
+  - step_up
+  - mute
+  - app_freq
+  press_char:
+  - none
+  - none
+  - none
+  - none
+
+mag:
+  freq: false
+  info: false
+  alc: false
+
+voice:
+  mode: lcd
+  lang: 0
+  rate: 100
+  pitch: 100
+  volume: 100
+
+freq:
+  accel: none
+  mode: slide
+
+clock:
+  view: time_power
+  time_timeout: 5
+  power_timeout: 3
+  tx_timeout: 1

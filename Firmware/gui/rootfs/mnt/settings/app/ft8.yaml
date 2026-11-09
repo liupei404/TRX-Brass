@@ -1,0 +1,6 @@
+protocol: ft8
+ft8_band: 5
+ft4_band: 3
+show: all
+tx_auto: false
+tx_freq: 1325

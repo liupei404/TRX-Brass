@@ -392,3 +392,27 @@ cd Hardware/RadioUnit/Gerber  # 射频单元生产文件
 **注意**: 本项目仅用于业余无线电和教育目的，使用时请遵守当地无线电法规。
 
 Made with ❤️ by amateur radio community
+
+---
+
+## 本仓库改动（长按开关机与构建一致性）
+
+- **电源键**：短按切换背光（行为不变）；长按 1000 ms 保存全部设置、`sync()` 后
+  `reboot(RB_POWER_OFF)`；内核没有关机驱动时按有序退出处理，避免 `brass_daemon`
+  反复重启。开机长按检测需要电源锁存 / FPGA 硬件完成，GUI 只在启动时读取
+  按键状态作诊断，默认不会自行断电。
+- **GUI 源码**：`Firmware/gui` 已从子模块改为本仓库的普通目录，
+  `brass-gui.mk` 使用 `SITE_METHOD = local` 直接构建仓库内源码；第三方 LVGL 9.5
+  位于 `Firmware/gui/lvgl`，是唯一保留的子模块，克隆请使用
+  `git clone --recurse-submodules <仓库地址>`。
+- **构建与验证**：三套构建链、烧录步骤和主机端电源模块单元测试见
+  [BUILDING.md](BUILDING.md)；自有代码许可证见 `Firmware/gui/LICENSE`
+  （LGPL-2.1-or-later），第三方组件保留各自许可证。
+- **分析与记录**：[Docs/TRX-Brass-TODO.html](Docs/TRX-Brass-TODO.html)
+  为版本变更分析与待办清单，[Docs/TRX-Brass-CodeChanges.html](Docs/TRX-Brass-CodeChanges.html)
+  为代码修改记录。
+- **项目状态**：仍为原型，两套 defconfig 中默认 root 口令与 SSH 仍启用，
+  无 CI 与完整测试体系，V2.0 射频板改板项见 `Hardware/RadioUnit/FixList.txt`。
+
+本仓库基于 Belousov Oleg (R1CBU) 的原项目
+`https://github.com/strijar/TRX-Brass`。

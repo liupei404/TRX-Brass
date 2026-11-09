@@ -1,0 +1,20 @@
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Local build outputs (already tracked files are unaffected)
+Firmware/system/output_brass/
+Firmware/system/buildroot-*.tar.gz
+Firmware/gui/build/
+Firmware/gui/buildroot/build/
+CMakeCache.txt
+CMakeFiles/
+
+# Host-side test binaries and caches
+Firmware/gui/tests/power_test
+*.o
+*.pyc
+__pycache__/

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRX Brass — 版本变更分析与待办清单（a2122d0 / 42bafc8）</title>
+<style>
+  :root{
+    --ink:#1b2430; --muted:#5c6b7a; --line:#dde4ec; --bg:#f4f6f9; --card:#ffffff;
+    --brand:#1f4e79; --p0:#c0392b; --p1:#c77700; --p2:#2563a8; --ok:#2e7d52;
+    --fixed:#2e7d52; --partial:#b8860b; --open:#6b7a8c; --changed:#2563a8; --new:#7b4bb7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1360px;margin:0 auto;padding:28px 22px 60px}
+  header{background:var(--card);border:1px solid var(--line);border-radius:10px;
+         padding:26px 30px;box-shadow:0 1px 3px rgba(20,40,70,.06)}
+  h1{margin:0 0 6px;font-size:26px;color:var(--brand);letter-spacing:.3px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .meta{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13px;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:14px}
+  .meta b{color:var(--ink);font-weight:600}
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 0}
+  .stat{flex:1 1 132px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+  .stat .n{font-size:22px;font-weight:700;line-height:1.2}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .toolbar{position:sticky;top:0;z-index:5;background:rgba(244,246,249,.96);backdrop-filter:blur(6px);
+           border:1px solid var(--line);border-radius:10px;margin:16px 0 22px;padding:12px 14px;
+           display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 1px 3px rgba(20,40,70,.05)}
+  .toolbar input[type=search]{flex:1 1 240px;padding:7px 11px;border:1px solid var(--line);
+           border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+  .group{display:flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:3px;background:#fff}
+  .group > span{font-size:11px;color:var(--muted);padding:0 6px}
+  button{font:inherit;padding:5px 10px;border:1px solid transparent;background:transparent;color:var(--ink);
+         border-radius:5px;cursor:pointer;font-size:12.5px}
+  button:hover{color:var(--brand)}
+  button.on{background:var(--brand);color:#fff}
+  .progress{height:6px;background:#e3e9f0;border-radius:99px;overflow:hidden;flex:1 1 140px}
+  .progress > i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+  .pct{font-size:12px;color:var(--muted);min-width:74px;text-align:right;font-variant-numeric:tabular-nums}
+  section{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 20px;overflow:hidden}
+  h2{margin:0;padding:14px 20px;font-size:16px;background:#f8fafc;border-bottom:1px solid var(--line);color:var(--brand)}
+  h2 small{font-weight:400;color:var(--muted);margin-left:10px;font-size:12px}
+  h3{margin:16px 20px 8px;font-size:13.5px;color:var(--brand)}
+  .note{padding:10px 20px;color:var(--muted);font-size:12.5px;background:#fcfdff;border-bottom:1px solid var(--line)}
+  .summary{padding:14px 20px;background:#f3f9f5;border-bottom:1px solid var(--line);font-size:13px}
+  .summary b{color:var(--fixed)}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th{font-size:12px;color:var(--muted);text-align:left;font-weight:600;
+     padding:9px 10px;background:#fbfcfe;border-bottom:1px solid var(--line)}
+  td{padding:10px 10px;border-bottom:1px solid #eef2f6;vertical-align:top;word-break:break-word}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f7fbff}
+  tr.done{opacity:.45}
+  tr.done .task{text-decoration:line-through}
+  .col-chk{width:34px}.col-id{width:48px}.col-p{width:54px}.col-s{width:76px}
+  .col-task{width:21%}.col-ev{width:28%}.col-fix{width:auto}
+  .col-when{width:120px}.col-what{width:auto}
+  .id{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+  .badge,.st{display:inline-block;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+  .P0{background:var(--p0)}.P1{background:var(--p1)}.P2{background:var(--p2)}
+  .s-fixed{background:var(--fixed)}.s-partial{background:var(--partial)}.s-open{background:var(--open)}
+  .s-changed{background:var(--changed)}.s-new{background:var(--new)}
+  .task{font-weight:600;color:var(--ink)}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+       font-size:12px;background:#f1f5f9;border:1px solid #e6ebf1;border-radius:4px;
+       padding:1px 4px;color:#33475e;word-break:break-all}
+  .ev{font-size:12.5px;color:var(--muted);line-height:1.9}
+  .fix{font-size:13px}
+  .commit{font-size:12px;color:var(--brand);font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+  input[type=checkbox]{width:16px;height:16px;accent-color:var(--ok);cursor:pointer}
+  footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;margin-top:28px}
+  footer p{margin:5px 0}
+  @media (max-width:860px){
+    table,thead,tbody,tr,td,th{display:block}
+    thead{display:none}
+    tr{border-bottom:1px solid var(--line);padding:8px 12px}
+    td{border:none;padding:3px 0}
+    td:not(.col-chk):not(.col-id):not(.col-p):not(.col-s){padding-left:26px}
+    .col-chk,.col-id,.col-p,.col-s{display:inline-block}
+  }
+  @media print{
+    body{background:#fff}
+    .wrap{max-width:none;padding:0}
+    .toolbar{display:none}
+    header,section{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+    section{page-break-inside:avoid}
+    tr.done{opacity:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>TRX Brass — 版本变更分析与待办清单</h1>
+  <p class="sub">已按原作者最新基线重新分析：本版本修复了什么、旧清单哪些问题被解决、以及新版引入了哪些新问题。</p>
+  <div class="meta">
+    <span>当前基线 <b>主仓库 a2122d0（2026-10-16）</b></span>
+    <span>GUI 子模块 <b>42bafc8 / LVGL 9.5.0（85aa60d）</b></span>
+    <span>对比基线 <b>558d79c + c7e21aa（v0.6.0 旧版）</b></span>
+    <span>变更规模 <b>主仓库 4 提交、GUI 27 提交 / 189 文件 / +29166 −1414 行</b></span>
+    <span>重新分析 <b>2026-11-10</b>（初版 2026-11-09 基于旧版，行号已全部重核）</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n" id="s-all">0</div><div class="l">清单条目</div></div>
+    <div class="stat"><div class="n" style="color:var(--p0)" id="s-p0">0</div><div class="l">P0 必须处理</div></div>
+    <div class="stat"><div class="n" style="color:var(--p1)" id="s-p1">0</div><div class="l">P1 建议尽快</div></div>
+    <div class="stat"><div class="n" style="color:var(--p2)" id="s-p2">0</div><div class="l">P2 排期改进</div></div>
+    <div class="stat"><div class="n" style="color:var(--fixed)" id="s-fixed">0</div><div class="l">旧问题已修复</div></div>
+    <div class="stat"><div class="n" style="color:var(--partial)" id="s-partial">0</div><div class="l">部分修复</div></div>
+    <div class="stat"><div class="n" style="color:var(--open)" id="s-open">0</div><div class="l">仍存在</div></div>
+    <div class="stat"><div class="n" style="color:var(--new)" id="s-new">0</div><div class="l">新版新增问题</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input type="search" id="q" placeholder="搜索事项、文件路径、提交号…" aria-label="搜索">
+  <div class="group"><span>级别</span>
+    <button class="on" data-fp="all">全部</button><button data-fp="P0">P0</button>
+    <button data-fp="P1">P1</button><button data-fp="P2">P2</button>
+  </div>
+  <div class="group"><span>状态</span>
+    <button class="on" data-fs="all">全部</button><button data-fs="fixed">已修复</button>
+    <button data-fs="partial">部分修复</button><button data-fs="open">仍存在</button><button data-fs="new">新增</button>
+  </div>
+  <button id="only-open">仅看未完成</button>
+  <button id="reset">清空勾选</button>
+  <div class="progress"><i id="bar"></i></div>
+  <span class="pct" id="pct">0 / 0 已完成</span>
+</div>
+
+<!-- ============ 版本修复内容 ============ -->
+<section data-sec>
+  <h2>零、本版本修复了什么 <small>What upstream fixed</small></h2>
+  <div class="note">来源：<code>git log 558d79c..a2122d0</code>（主仓库）与 <code>git log c7e21aa..42bafc8</code>（GUI 子模块）。下表为纯展示，不参与勾选统计。</div>
+  <div class="summary">
+    原作者主要是把 GUI <b>整体移植到 LVGL 9.5 并修复运行时稳定性</b>，同时<b>重做了功率/SWR 测量链路</b>（这也是旧清单里唯一被完整修复的一项 C04），并新增 DMR、SSTV、蓝牙、麦克风设备选择等功能。旧清单 34 项中：<b>1 项已修复、3 项部分修复、30 项仍存在</b>；另外新版自身引入 6 个新问题（见第八节）。2026-11-10 的第二轮本地修复又处理了其中 14 项，见第九节；状态列与统计已同步更新。
+  </div>
+
+  <h3>主仓库：4 个提交（2026-09-29 → 10-16）</h3>
+  <table>
+    <thead><tr><th class="col-when">提交</th><th class="col-when">类别</th><th class="col-what">修复 / 改进内容</th><th class="col-ev">证据</th></tr></thead>
+    <tbody>
+      <tr><td class="commit">1b2c8d3</td><td>FPGA</td><td><b>TX 发射电平修复</b>，更新 7010 / 7020 两套比特流。</td><td class="ev"><code>Firmware/system/br2_external/board/brass/7010/system.bit</code>、<code>7020/system.bit</code>（二进制替换）</td></tr>
+      <tr><td class="commit">222e20d</td><td>功率/SWR ADC</td><td>调校 pwr/swr ADC 通道：ADS1015 两个通道增益由 1 改为 3，新增内核缓冲采样补丁并调整内核配置。</td><td class="ev"><code>board/brass/linux/brass-common.dtsi:316-322</code>、新增 <code>ads1015-buffered-raw.patch</code>（167 行）、<code>linux.config</code></td></tr>
+      <tr><td class="commit">ffc2d8b</td><td>射频测量</td><td>改进定向耦合器工作方式，提升功率与 SWR 测量精度；新增 configfs 挂载以支持相关内核机制。</td><td class="ev"><code>board/brass/linux/rootfs-overlay/etc/fstab:9</code></td></tr>
+      <tr><td class="commit">a2122d0</td><td>构建可复现</td><td>GUI 打包版本由浮动 tag <code>v0.6.0</code> 改为<b>固定 commit 42bafc8</b>，避免拉取到不同代码。</td><td class="ev"><code>br2_external/package/brass-gui/brass-gui.mk:7</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>GUI 子模块：27 个提交（2026-08-14 → 10-16），按功能归类</h3>
+  <table>
+    <thead><tr><th class="col-when">类别 / 提交</th><th class="col-what">修复 / 改进内容</th><th class="col-ev">证据</th></tr></thead>
+    <tbody>
+      <tr><td class="commit">LVGL 9.5 移植<br>0a7ccc2 · 421cef1<br>2628bce · ea0526b<br>bb1479b · b4015a4<br>2c05c53 · 8bfa104<br>5a61fcd · a80b480</td>
+        <td>升级 LVGL 9.5.0 并重建构建配置；移植显示/输入/消息总线、对话框渲染；逐个移植瀑布图、3D 频谱、bandinfo 隐藏、finder、xmeter 控件；更新 Python 绑定；合并 lvgl-9.5 分支。</td>
+        <td class="ev"><code>Firmware/gui/CMakeLists.txt:18-26</code> 改用 <code>CONFIG_LV_BUILD_*</code>；<code>src/main.c:9-10,101-104</code> 使用 <code>lv_linux_fbdev_create</code>；嵌套 lvgl 检出 <code>85aa60d</code>（9.5.0）</td></tr>
+      <tr><td class="commit">运行时稳定性<br>1d2206e · 2942560<br>d4468d0 · 7d42a87<br>7df19f4</td>
+        <td>稳定 LVGL 9 运行时；<b>把 Python 定时器绑定到 LVGL 对象生命周期</b>（修复对象销毁后定时器悬空导致的崩溃）；优化瀑布图渲染性能；修复调谐时瀑布图抖动；加固 GUI 对象与 worker 线程生命周期。</td>
+        <td class="ev"><code>src/python/</code> 绑定与 <code>src/widgets/lv_waterfall.*</code>、<code>lv_xmeter.c</code> 重写；<code>src/main.c:171-189</code> 新增 <code>exit_requested</code> 主循环</td></tr>
+      <tr><td class="commit">功率 / SWR 链路<br>2a781f5 · 31070c9<br>20d28b0 · 6db4d4e</td>
+        <td><b>旧清单 C04 的修复</b>：新增 PA/输入功率表、静态电流测量、SWR/PWR 表；IIO 线程不再丢弃 <code>pwr_ref/pwr_fwd</code>，改为缓冲采样 + 三次校准后计算 SWR/PWR；新增校准参数字段并持久化。</td>
+        <td class="ev">新增 <code>src/swr.c:130-174</code>、<code>src/hw/iio_adc.c:272</code>、<code>src/hw/power_meter.c</code>；<code>src/hw/iio.c:43-47,155</code>、<code>src/settings/rf.c:37-38</code>、<code>src/dialog_rf_settings.c:38</code></td></tr>
+      <tr><td class="commit">音频 / 麦克风<br>f203896 · ad77ac9<br>0957680</td>
+        <td>新增麦克风 EQ/滤波器；改进麦克风配置热更新；支持选择麦克风与扬声器设备。</td>
+        <td class="ev"><code>src/dialog_audio_settings.c</code>、<code>src/audio.c</code>、<code>src/settings/audio.*</code></td></tr>
+      <tr><td class="commit">新功能<br>66a7629 · 3c53874<br>b7b1847 · 42bafc8<br>66356cd</td>
+        <td>蓝牙与键盘热插拔（udev 监控）；RX SSTV 接收；DMR 数字对讲（含 Python 文件修复）；F9 快捷输入频率；新增 device_monitor、dmr、sstv、dbus 等模块目录。</td>
+        <td class="ev"><code>src/dbus/bluez.c</code>、<code>src/dialog_bluetooth.c:26</code>、<code>src/keyboard.c:252</code>；<code>src/CMakeLists.txt:5-6,13-15,24-36</code></td></tr>
+      <tr><td class="commit">健壮性 / 退出<br>（随上述提交）</td>
+        <td>退出流程新增 <code>iio_shutdown()</code> 与 <code>settings_rf_save()</code>（保存的设置由 3 组增至 4 组）；新增信号处理与有序退出；IIO 增加读失败计数、日志与线程/ctx 清理；自有代码 FIXME 由 25 处降至 12 处。</td>
+        <td class="ev"><code>src/main.c:79-91,171-189</code>；<code>src/hw/iio.c:39-52,159-178</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 1 文档待办 ============ -->
+<section data-sec>
+  <h2>一、文档待办 <small>Documentation TODO</small></h2>
+  <div class="note">状态列说明：<span class="st s-fixed">已修复</span> 本版本已解决 · <span class="st s-partial">部分修复</span> 有进展但未完成 · <span class="st s-open">仍存在</span> 与旧版相同 · <span class="st s-changed">有变化</span> 仍存在但细节变了。</div>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="D01"></td><td class="col-id id">D01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">补顶层 README</td>
+        <td class="ev">顶层 README 检索 0 命中；<code>Firmware/gui/README.md:1-3</code> 仍只有两行。</td>
+        <td class="fix">新建 <code>README.md</code>：项目定位、目录导航、硬件版本、许可证、构建与刷机总入口、当前状态。</td></tr>
+      <tr data-p="P0" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="D02"></td><td class="col-id id">D02</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">修正失效的构建文档 / 补齐缺失脚本</td>
+        <td class="ev"><code>Firmware/gui/buildroot/README.md:10</code> 仍要求 <code>./install.sh</code>，全仓检索 0 命中；<code>buildroot/conf.sh:1</code> 仍指向 <code>../../system/output_brass</code>。</td>
+        <td class="fix">补 <code>install.sh</code> 或删除该步骤；写明"必须先完成 Buildroot 系统构建"。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="D03"></td><td class="col-id id">D03</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">统一三套构建链的说明</td>
+        <td class="ev"><code>BUILDING.md</code> 0 命中；<code>config_brass.sh:3-10</code>、<code>gui/buildroot/cmake.sh:1-24</code>、<code>microblase/Makefile:1-11</code> 仍各自独立，新版又引入 LVGL 9 构建选项（见 N02）。</td>
+        <td class="fix">补 <code>BUILDING.md</code>：三链顺序、7010/7020 差异、<code>mb.code</code>/<code>mb.data</code> 去向、LVGL 9 配置要求、刷机步骤。</td></tr>
+      <tr data-p="P1" data-s="partial"><td class="col-chk"><input type="checkbox" data-id="D04"></td><td class="col-id id">D04</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-partial">部分修复</span></td>
+        <td class="task">补运行时配置 schema 文档</td>
+        <td class="ev"><b>有进展</b>：<code>src/main.c:81-84</code> 退出时新增 <code>settings_rf_save()</code>，保存由 3 组增至 4 组；<code>settings/rf.c:37-38</code> 新增校准字段。但 schema 文档仍 0 命中，<code>/mnt/settings/</code> 共 8 个 YAML，hw/app/ft8 仍未保存。</td>
+        <td class="fix">输出字段表（名称/类型/默认值/取值范围/保存时机），说明哪些设置在退出时才落盘。</td></tr>
+      <tr data-p="P1" data-s="open"><td class="col-chk"><input type="checkbox" data-id="D05"></td><td class="col-id id">D05</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">补硬件版本状态与改板记录</td>
+        <td class="ev"><code>Hardware/README.md</code> 0 命中；<code>Hardware/RadioUnit/FixList.txt:1-37</code> 仍在，Gerber 仍为 v2.0 系列，无 V2.1。</td>
+        <td class="fix">补各板版本、Gerber 与原理图/BOM 对应关系、哪些板必须手工飞线、两块板兼容性。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="D06"></td><td class="col-id id">D06</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">补第三方许可证清单</td>
+        <td class="ev"><code>LICENSES.md</code> 0 命中；<code>Firmware/gui/LICENSE</code> 为 LGPL-2.1 与 <code>brass-gui.mk:11</code> 的 GPLv2 仍冲突；新版又新增 vendored DMR/SSTV 代码（见 N06）。</td>
+        <td class="fix">补 <code>LICENSES.md</code>：组件、版本、许可证、来源、是否 vendored；同步修 B01。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="D07"></td><td class="col-id id">D07</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">补贡献规范与代码风格约定</td>
+        <td class="ev"><code>.clang-format</code>、<code>CONTRIBUTING.md</code> 均 0 命中；<code>rootfs/usr/share/brass/python/</code> 下 18 个 .py 仍有行首 Tab（如 <code>info.py</code> 63 处）。</td>
+        <td class="fix">补规范与格式化配置，明确 C/Python 缩进、版权头模板、子模块更新流程。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="D08"></td><td class="col-id id">D08</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">补操作/使用手册</td>
+        <td class="ev">用户手册 0 命中；<code>rootfs/etc/init.d/S99gui:44-53</code> 命令仍在；新版新增 DMR/SSTV/蓝牙等功能更需说明。</td>
+        <td class="fix">补开机/按键/频段模式/数字模式/SWR 扫描/蓝牙配对的简版手册。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 2 构建与工程一致性 ============ -->
+<section data-sec>
+  <h2>二、构建与工程一致性修复 <small>Build &amp; Consistency</small></h2>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="B01"></td><td class="col-id id">B01</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">统一许可证声明</td>
+        <td class="ev"><code>brass-gui.mk:11</code> 仍 <code>BRASS_GUI_LICENSE = GPLv2</code>，无 <code>LICENSE_FILES</code>。</td>
+        <td class="fix">改为 LGPL-2.1-or-later 并补 <code>BRASS_GUI_LICENSE_FILES</code>。</td></tr>
+      <tr data-p="P1" data-s="partial"><td class="col-chk"><input type="checkbox" data-id="B02"></td><td class="col-id id">B02</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-partial">部分修复</span></td>
+        <td class="task">消除 GUI 源码来源双轨</td>
+        <td class="ev"><b>有进展</b>：<code>brass-gui.mk:7</code> 已 pin 到 <code>42bafc8</code> 且与当前子模块 HEAD 一致。但 <code>.gitmodules:3</code> 仍用相对 URL <code>../brass_gui</code>，<code>brass-gui.mk:8-9</code> 仍从 GitHub git 拉取 —— 两种来源并存。</td>
+        <td class="fix">统一为单一来源；转普通目录后应让打包直接使用本地源码，否则改动不会进固件。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="B03"></td><td class="col-id id">B03</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">清理 LVGL 配置中的过时/无效项</td>
+        <td class="ev"><code>lv_drv_conf.h:3</code> 仍写 "v8.2.0"、<code>:131</code> 仍 <code>EVDEV_NAME /dev/input/event6</code>；<code>src/main.c:128-132</code> 自注册 <code>event0..4</code>；实际已是 LVGL 9.5.0（见 N01）。</td>
+        <td class="fix">更新版本注释；删除失效的 evdev 配置，或明确标注为未使用。</td></tr>
+      <tr data-p="P1" data-s="open"><td class="col-chk"><input type="checkbox" data-id="B04"></td><td class="col-id id">B04</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">去除硬编码依赖路径与版本</td>
+        <td class="ev"><code>src/CMakeLists.txt:39</code> 硬编码 <code>${CMAKE_SYSROOT}/usr/include/RHVoice/</code>、<code>:64</code> 硬编码 <code>python3.11</code>；<code>buildroot/conf.sh:1</code> 相对路径仍在。</td>
+        <td class="fix">改用 <code>find_package(Python3)</code> / <code>pkg_check_modules</code> / <code>find_path</code>；工具链路径可配置。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="B05"></td><td class="col-id id">B05</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">补前置依赖检测与清晰报错</td>
+        <td class="ev"><code>gui/buildroot/cmake.sh:3-24</code> 无工具链前置检查；<code>config_brass.sh:5-8</code> 仍需联网 wget；本机 <code>output_brass/host</code> 无交叉编译器与 sysroot，无法完成完整编译。</td>
+        <td class="fix">脚本中检测工具链/sysroot 并给出可操作提示；缓存 Buildroot tarball。</td></tr>
+      <tr data-p="P2" data-s="partial"><td class="col-chk"><input type="checkbox" data-id="B06"></td><td class="col-id id">B06</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-partial">部分修复</span></td>
+        <td class="task">补顶层 <code>.gitignore</code> 与最小 CI</td>
+        <td class="ev">顶层 <code>.gitignore</code> 与 CI 配置 0 命中（仅 6 个子目录级 .gitignore）；当前工作区仍有未跟踪的 <code>.vscode/</code>。</td>
+        <td class="fix">忽略编辑器目录与产物；加最小流水线做配置 + 编译检查。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 3 功能未完成 ============ -->
+<section data-sec>
+  <h2>三、未完成 / 停用功能修复 <small>Feature Gaps</small></h2>
+  <div class="note">这一组多数是"注释掉但未接线"的状态，处理前需先做产品决策：实现、延后、或彻底删除死代码。新版未触及这组。</div>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="open"><td class="col-chk"><input type="checkbox" data-id="F01"></td><td class="col-id id">F01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">背光与 GPS 初始化被注释，存在悬空依赖</td>
+        <td class="ev"><code>src/main.c:162-165</code> 仍注释 <code>backlight_init()</code>/<code>gps_init()</code>；<code>src/queue.c:45</code> 仍调 <code>backlight_is_on()</code>；<code>backlight.c:57-70</code> tick 仍空壳。</td>
+        <td class="fix">确定支持范围：支持则恢复初始化并验证 sysfs/gpsd；不支持则删除死代码与 <code>queue.c</code> 判断。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="F02"></td><td class="col-id id">F02</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">清理 / 重写 <code>radio_tick()</code> 旧平台遗留</td>
+        <td class="ev"><code>src/radio.c:46</code> 起整段注释到 <code>:131</code>，内含 <code>x6100_flow_read</code>/<code>x6100_control_*</code>；<code>radio.h:71</code> 仍声明；主循环 <code>main.c:171-189</code> 不调用（全仓仅 2 处命中）。</td>
+        <td class="fix">删除死函数与声明，或按本项目 FPGA/UIO 接口重写并接入主循环。注意 <code>radio.c:116-117</code> 的 <code>x6100_control_poweroff()</code> 仍是关机链路断点。</td></tr>
+      <tr data-p="P1" data-s="open"><td class="col-chk"><input type="checkbox" data-id="F03"></td><td class="col-id id">F03</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">实现存储记忆功能</td>
+        <td class="ev"><code>src/main_screen.c:65-104</code> 的 <code>mem_load()</code>/<code>mem_save()</code> 仍为 <code>REWRITE</code> 注释、函数体空。</td>
+        <td class="fix">基于现有 settings/bands 结构重写，定义存储格式与容量。</td></tr>
+      <tr data-p="P1" data-s="open"><td class="col-chk"><input type="checkbox" data-id="F04"></td><td class="col-id id">F04</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">ATU 加载与 CW 键控为空实现</td>
+        <td class="ev"><code>src/radio.c:544</code> <code>radio_load_atu()</code> 整体 <code>FIXME</code> 注释；<code>:612-613</code> <code>radio_set_morse_key()</code> 空函数体。</td>
+        <td class="fix">实现或显式返回"不支持"并隐藏 UI 入口。</td></tr>
+      <tr data-p="P2" data-s="changed"><td class="col-chk"><input type="checkbox" data-id="F05"></td><td class="col-id id">F05</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-changed">有变化</span></td>
+        <td class="task">逐项清理散落的 FIXME</td>
+        <td class="ev"><b>数量由 25 处降至 12 处</b>，位置整体后移：<code>dialog_settings.c:557,563,569,575</code>、<code>dialog_swrscan.c:147</code>、<code>main_screen.c:359,781</code>、<code>dialog_msg_cw.c:75</code>、<code>radio.c:544</code>、<code>fpga/dac.c:36</code>。新增的 dmr/sstv/dbus 模块中 TODO/FIXME 0 命中。</td>
+        <td class="fix">按新行号逐项判定：能补则补，不能补则置灰对应控件。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="F06"></td><td class="col-id id">F06</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">记录 FT8/FT4 上游能力边界</td>
+        <td class="ev"><code>src/ft8/README.md:23-31</code> 仍自述"不算真正的库"；pack/unpack/decode 共 14 处 TODO（非标准呼号、后缀、遥测、比赛模式）。</td>
+        <td class="fix">第三方上游限制，建议在用户手册列明不支持的消息类型并跟踪上游。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="F07"></td><td class="col-id id">F07</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">清理背光模块中的 X6100 残留符号</td>
+        <td class="ev"><code>src/backlight.c:27,67,90,97</code> 仍出现 <code>x6100_gpio_set</code>/<code>x6100_pin_light</code>/<code>params.*</code>。</td>
+        <td class="fix">与 F01 一并处理，用 <code>hw/gpio.c</code> 的 libgpiod 接口替换或删除。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 4 代码缺陷 ============ -->
+<section data-sec>
+  <h2>四、代码缺陷修复 <small>Code Defects</small></h2>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="C01"></td><td class="col-id id">C01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">ATU 电容继电器初始化循环上界写错</td>
+        <td class="ev"><code>src/hw/gpio.c:176</code> 初始化 <code>atu_c[]</code> 仍用 <code>i &lt; ATU_L_NUM</code>，应为 <code>ATU_C_NUM</code>；<code>:27-28</code> 两者当前都是 7 才未暴露。</td>
+        <td class="fix">改为 <code>ATU_C_NUM</code>，或用数组长度推导上界。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="C02"></td><td class="col-id id">C02</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">文件描述符有效性判断错误</td>
+        <td class="ev"><code>src/backlight.c:32,41</code> 仍用 <code>fd &gt; 0</code>；<b>同类缺陷扩散到新增代码</b>：<code>src/hw/power_meter.c:65,72,79,86</code> 用 <code>fd &lt;= 0</code>（见 N04）。</td>
+        <td class="fix">统一改为 <code>fd &gt;= 0</code>；<code>open()</code> 失败记录日志并降级。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="C03"></td><td class="col-id id">C03</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">DAC FIFO 短写无任何恢复</td>
+        <td class="ev"><code>src/fpga/dac.c:35-36</code> 仍只 <code>LV_LOG_WARN("Fix me")</code> 后继续循环。</td>
+        <td class="fix">区分短写/<code>EINTR</code>/错误；连续失败达阈值时上报 UI 并停止 PTT。</td></tr>
+      <tr data-p="P2" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="C04"></td><td class="col-id id">C04</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">功率计采样被读取后丢弃</td>
+        <td class="ev"><b>本版本已解决</b>：<code>src/hw/iio.c:43-47</code> 只读按键 x/y，<code>:155</code> 通过 <code>iio_adc_start(dev, pwr_fwd, pwr_rev, swr_update)</code> 把功率数据交给 <code>src/swr.c:130-174</code> 计算 SWR/PWR；<code>hw/iio_adc.c:272</code> 实现缓冲采样与校准。旧版"读取 ref/fwd 后丢弃"代码已不存在。</td>
+        <td class="fix">保留追溯记录即可；可顺带核对 <code>hw/power_meter.c</code> 的遗留空转（见 N04）。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="C05"></td><td class="col-id id">C05</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">引入最小可回归的单元测试</td>
+        <td class="ev">自有 CMakeLists 中 <code>add_test</code>/<code>enable_testing</code> 0 命中，自有测试文件 0 命中；新版代码量增至 +29166 行，仍无测试。</td>
+        <td class="fix">先把纯算法（FFT、FT8 打包解包、SWR 计算）抽成 PC 可编译的测试目标，再接 CI。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 5 安全与系统配置 ============ -->
+<section data-sec>
+  <h2>五、安全与系统配置修复 <small>Security &amp; Image</small></h2>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="open"><td class="col-chk"><input type="checkbox" data-id="S01"></td><td class="col-id id">S01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">移除明文弱口令并收敛远程登录</td>
+        <td class="ev"><code>brass7010_defconfig</code> 与 <code>brass7020_defconfig</code> 的 <code>:13</code> 均为 <code>ROOT_PASSWD="123"</code>，<code>:14</code> eth0 DHCP、<code>:174</code> OpenSSH。</td>
+        <td class="fix">发布镜像禁用 root 密码登录或默认关 SSH；两套 defconfig 同时修改。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="S02"></td><td class="col-id id">S02</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">给 GUI 守护进程的无限重启加约束</td>
+        <td class="ev"><code>rootfs/usr/sbin/brass_daemon:5-11</code> 仍无退避死循环；<code>src/main.c:86</code> 仍 <code>exit(1)</code>。新版虽加了信号处理与 <code>exit_requested</code> 主循环（<code>main.c:90-91,171-189</code>），但<b>退出码语义与 daemon 判定未变</b>。</td>
+        <td class="fix">加指数退避、单位时间重启上限与日志轮转；达到阈值进入安全状态并提示。</td></tr>
+      <tr data-p="P2" data-s="changed"><td class="col-chk"><input type="checkbox" data-id="S03"></td><td class="col-id id">S03</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-changed">有变化</span></td>
+        <td class="task">精简根文件系统</td>
+        <td class="ev">两份 defconfig <code>:199</code> 仍 <code>"1G"</code>；Lua <code>:109-110</code>、Boost <code>:137-145</code>、mc/nano <code>:195-196</code> 仍在。<b>蓝牙包已因新增 bluez 功能变为部分相关</b>（<code>src/dbus/bluez.c</code>），其余无关包未变。</td>
+        <td class="fix">按实际使用的包复核，保留一份最小 defconfig 便于复现。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 6 硬件 ============ -->
+<section data-sec>
+  <h2>六、硬件待办 <small>Hardware</small></h2>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="open"><td class="col-chk"><input type="checkbox" data-id="H01"></td><td class="col-id id">H01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">把 RadioUnit 改件清单合入新版 PCB</td>
+        <td class="ev"><code>Hardware/RadioUnit/FixList.txt:1-37</code> 仍在（含 <code>:37</code> PCF8575PWR）；Gerber 仍为 BRASSPA-v2.0 系列，无 V2.1。本版本只改了固件/内核，硬件未动。</td>
+        <td class="fix">出 V2.1 原理图/BOM/贴片文件/Gerber，并同步检查 <code>hw/gpio.c</code> 的映射。</td></tr>
+      <tr data-p="P1" data-s="open"><td class="col-chk"><input type="checkbox" data-id="H02"></td><td class="col-id id">H02</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">核对两块板的版本组合与 BOM</td>
+        <td class="ev">Hardware 下 README/兼容矩阵 0 命中；MainUnit BOM-V1.1、RadioUnit BOM-V2.x、两份 .step 与 Case/ 仍在。</td>
+        <td class="fix">给出可装配组合清单，核对结构件孔位与接口。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="H03"></td><td class="col-id id">H03</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">数据手册与 BOM 器件型号对齐</td>
+        <td class="ev"><code>Docs/Datasheet/</code> 仅 6 份 PDF，<code>FixList.txt:37</code> 新增的 PCF8575PWR 检索 0 命中。</td>
+        <td class="fix">补齐新增器件手册，BOM 中标注对应手册文件。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 7 仓库卫生 ============ -->
+<section data-sec>
+  <h2>七、仓库状态与发布流程 <small>Repo Hygiene</small></h2>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">新版状态</th><th class="col-task">事项</th><th class="col-ev">现状 / 证据（新基线）</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P1" data-s="partial"><td class="col-chk"><input type="checkbox" data-id="R01"></td><td class="col-id id">R01</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-partial">部分修复</span></td>
+        <td class="task">固定子模块指针，清理工作区</td>
+        <td class="ev"><b>有进展</b>：子模块 HEAD 已同步为 <code>42bafc8</code>，与 <code>brass-gui.mk:7</code> 一致；嵌套 lvgl 为 <code>85aa60d</code>。但主仓库 gitlink 仍记录 <code>2553bf3</code>（<code>origin/redesign</code>），顶层 <code>.gitignore</code> 0 命中，<code>Firmware/gui/.gitmodules:4</code> 仍标 <code>release/v8.4</code>。</td>
+        <td class="fix">按既定方案把 <code>Firmware/gui</code> 转为普通目录，消除 gitlink 指针差异；补顶层忽略规则。</td></tr>
+      <tr data-p="P2" data-s="open"><td class="col-chk"><input type="checkbox" data-id="R02"></td><td class="col-id id">R02</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-open">仍存在</span></td>
+        <td class="task">建立发布检查清单</td>
+        <td class="ev">CHANGELOG、tag 说明、发布检查清单、CI 均 0 命中；仅 <code>brass-gui.mk:7</code> pin commit 使可复现性改善。</td>
+        <td class="fix">每次发版核对两套 defconfig、子模块/本地源码一致性、MicroBlaze 固件、默认口令、无关包。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 8 新版引入的问题 ============ -->
+<section data-sec>
+  <h2>八、新版引入 / 暴露的新问题 <small>New in a2122d0 / 42bafc8</small></h2>
+  <div class="note">这些是 LVGL 9 移植与新模块带来的不一致或未完成代码，旧清单里没有，建议优先处理 P0 两项——它们可能直接导致构建失败。</div>
+  <table>
+    <thead><tr><th class="col-chk"></th><th class="col-id">#</th><th class="col-p">级别</th><th class="col-s">状态</th><th class="col-task">事项</th><th class="col-ev">证据</th><th>建议动作</th></tr></thead>
+    <tbody>
+      <tr data-p="P0" data-s="new"><td class="col-chk"><input type="checkbox" data-id="N01"></td><td class="col-id id">N01</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-new">新增</span></td>
+        <td class="task">Buildroot 包依赖未随新模块同步</td>
+        <td class="ev"><code>brass-gui.mk:15</code> 仍只声明 5 个依赖（rhvoice/libpng/libcyaml/ext-liquid-dsp/libspecbleach），而 <code>src/CMakeLists.txt:56-67</code> 新增链接 <code>dbus-1</code>、<code>glib-2.0</code>、<code>gio-2.0</code>、<code>gobject-2.0</code>、<code>udev</code>、<code>xkbcommon</code> 等，且 defconfig 需启用对应包。</td>
+        <td class="fix">补齐 <code>BRASS_GUI_DEPENDENCIES</code> 与两套 defconfig 中的 dbus/glib/libudev/libxkbcommon 等，否则完整构建会缺依赖。</td></tr>
+      <tr data-p="P0" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="N02"></td><td class="col-id id">N02</td><td class="col-p"><span class="badge P0">P0</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">独立交叉编译脚本仍传 LVGL 8 构建选项</td>
+        <td class="ev"><code>Firmware/gui/CMakeLists.txt:18-20</code> 已改用 LVGL 9 的 <code>CONFIG_LV_BUILD_*</code>，但 <code>gui/buildroot/cmake.sh:23-24</code> 仍传 v8 的 <code>LV_CONF_BUILD_DISABLE_*</code>，两套命名混用。</td>
+        <td class="fix">同步 <code>cmake.sh</code> 的 CMake 参数，并在文档中说明 LVGL 9 的正确配置方式。</td></tr>
+      <tr data-p="P1" data-s="fixed"><td class="col-chk"><input type="checkbox" data-id="N03"></td><td class="col-id id">N03</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-fixed">已修复</span></td>
+        <td class="task">LVGL 版本声明三方不一致</td>
+        <td class="ev"><code>Firmware/gui/.gitmodules:4</code> 仍 <code>branch = release/v8.4</code>，<code>lv_drv_conf.h:3</code> 仍 "v8.2.0"，而嵌套 lvgl 实为 <b>9.5.0（85aa60d）</b>；<code>lv_drv_conf.h:126-131</code> 的 USE_EVDEV/event6 已成死配置（<code>src/CMakeLists.txt:21</code> 只编 xkb.c）。</td>
+        <td class="fix">更新 .gitmodules 分支与配置注释到 9.5，删除失效 evdev 项。</td></tr>
+      <tr data-p="P1" data-s="partial"><td class="col-chk"><input type="checkbox" data-id="N04"></td><td class="col-id id">N04</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-partial">部分修复</span></td>
+        <td class="task">新增 power_meter 模块包含空转线程与未读取的 fd</td>
+        <td class="ev"><code>src/hw/power_meter.c:56-60</code> <code>power_thread()</code> 只 <code>usleep(10000)</code> 空转；<code>:77-89</code> 打开的 <code>fd_pwr_v</code>/<code>fd_pwr_a</code> 从未读取；<code>:65,72,79,86</code> 用 <code>fd &lt;= 0</code> 误判合法的 fd 0。</td>
+        <td class="fix">确认该模块是占位还是应接线；补实际采样或删除空线程，统一 fd 判断（见 C02）。</td></tr>
+      <tr data-p="P1" data-s="new"><td class="col-chk"><input type="checkbox" data-id="N05"></td><td class="col-id id">N05</td><td class="col-p"><span class="badge P1">P1</span></td><td><span class="st s-new">新增</span></td>
+        <td class="task"><code>lv_drivers/xkb.c</code> 悬空引用</td>
+        <td class="ev"><code>src/CMakeLists.txt:21</code> 直接编译 <code>../lv_drivers/indev/xkb.c</code>，但顶层 <code>CMakeLists.txt:22</code> 未 <code>add_subdirectory(lv_drivers)</code>、<code>.gitmodules</code> 也未登记该目录；<code>src/keyboard.c:174</code> 调 <code>xkb_init_state</code>，依赖 <code>lv_drv_conf.h:147-149</code> 的 USE_XKB。</td>
+        <td class="fix">明确 lv_drivers 的来源与归属（vendored 或子模块），保证克隆后可构建。</td></tr>
+      <tr data-p="P2" data-s="new"><td class="col-chk"><input type="checkbox" data-id="N06"></td><td class="col-id id">N06</td><td class="col-p"><span class="badge P2">P2</span></td><td><span class="st s-new">新增</span></td>
+        <td class="task">新增 vendored 代码的许可证清单缺口</td>
+        <td class="ev"><code>src/dmr/CMakeLists.txt:1-2</code> 自述 "vendored sources"，另有 sstv 等新模块；<code>LICENSES.md</code> 仍 0 命中（见 D06）。</td>
+        <td class="fix">登记新增第三方代码的来源、版本与许可证。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 9 第二轮修复记录 ============ -->
+<section data-sec>
+  <h2>九、第二轮本地修复记录（2026-11-10） <small>Round 2</small></h2>
+  <div class="note">本轮处理「纯软件、无需硬件或产品决策」的条目，共 14 项；上表对应条目的状态徽章与统计已同步更新。逐项改动细节见 <code>Docs/TRX-Brass-CodeChanges.html</code> 第七节。</div>
+  <table>
+    <thead><tr><th class="col-when">条目</th><th class="col-what">改动</th><th class="col-ev">说明</th></tr></thead>
+    <tbody>
+      <tr><td class="commit">D01 · D02 · D03</td>
+        <td>新增顶层 <code>README.md</code> 与 <code>BUILDING.md</code>；重写 <code>Firmware/gui/buildroot/README.md</code>，删除不存在的 <code>install.sh</code> 步骤并补前置条件。</td>
+        <td class="ev">三套构建链顺序、产物去向、MicroBlaze 固件位置、刷机与主机端测试命令均已写明。</td></tr>
+      <tr><td class="commit">B01 · B03 · B06</td>
+        <td>许可证改为 LGPL-2.1-or-later 并指向 LICENSE 文件；更新 LVGL 版本声明、标注 event6 死配置、移除 <code>release/v8.4</code> 分支；新增顶层 <code>.gitignore</code>。</td>
+        <td class="ev">B06 标为部分修复：仍无 CI。</td></tr>
+      <tr><td class="commit">C01 · C02 · C03</td>
+        <td>修 <code>atu_c[]</code> 循环上界；统一 fd 判断为 <code>&gt;= 0</code> / <code>&lt; 0</code>；DAC FIFO 短写改为区分 EINTR / 短写 / 错误并累计上报。</td>
+        <td class="ev">消除 3 个真实缺陷；<code>gpio.c</code>/<code>dac.c</code> 语法检查受限于本机缺 <code>gpiod.h</code>、<code>liquid/liquid.h</code>。</td></tr>
+      <tr><td class="commit">F02</td>
+        <td>删除整个 <code>radio_tick()</code>（92 行 X6100 遗留注释死代码）及 <code>radio.h</code> 中的声明。</td>
+        <td class="ev">全仓 <code>radio_tick</code> / <code>x6100_control_poweroff</code> 检索 0 命中。</td></tr>
+      <tr><td class="commit">N02 · N03</td>
+        <td><code>cmake.sh</code> 改用 LVGL 9.5 的 <code>CONFIG_LV_BUILD_*</code>；LVGL 版本声明三方冲突已统一。</td>
+        <td class="ev">消除两个 P0 构建风险。</td></tr>
+      <tr><td class="commit">N04 · S02</td>
+        <td>power_meter 的 fd 判断已修（空转线程仍待确认）；<code>brass_daemon</code> 增加指数退避、60 秒窗口 5 次失败上限与日志。</td>
+        <td class="ev">N04 标为部分修复。</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>本轮未处理（需你决策或需目标环境）</b>：S01 默认 root 口令 / SSH 策略、F01 背光与 GPS 是否接线、F03/F04 记忆与 ATU/CW 键控、F05 散落 FIXME、N01 Buildroot 依赖实机验证、N05 lv_drivers 归属、N06 新增 vendored 许可证、H01-H03 硬件改板、D04-D08 其余文档、B02/B04/B05 构建重构、C05 测试体系、S03 镜像精简、R02 发布检查清单。</div>
+</section>
+
+<footer>
+  <p><b>优先级</b> P0：影响可用性/安全或会导致构建失败 · P1：影响协作与可维护性 · P2：长期质量与体验。</p>
+  <p><b>状态口径</b> "已修复/部分修复"指原作者上游提交相对于旧清单的改善；已修复项保留在清单中用于追溯，不再需要动手。"新增"指本版本引入、旧版不存在的问题。</p>
+  <p><b>关联说明</b> 旧清单中的 B02（双轨来源）与 S02（退出语义）在新版仍部分存在，已并入对应条目的"部分修复/有变化"描述，未重复计入新增问题；F05、S03 的行号与内容有变化但状态仍为未完成。</p>
+  <p><b>范围</b> 已排除 <code>Firmware/system/buildroot-2024.02/</code>、<code>output_brass/</code>、<code>Firmware/gui/lvgl/</code>、<code>lv_drivers/</code>、<code>third-party/</code>、<code>src/ft8/</code> 上游源码与构建产物；仅在核对版本与依赖时引用其元数据。所有路径相对仓库根目录，行号基于 <code>a2122d0</code> + <code>42bafc8</code>。</p>
+  <p><b>使用</b> 勾选状态保存在本浏览器 localStorage；支持按级别/状态筛选与打印导出 PDF。</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY = 'trx-brass-todo-v2';
+  var rows = Array.prototype.slice.call(document.querySelectorAll('tr[data-p]'));
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[data-id]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { saved = {}; }
+
+  function store(){
+    var o = {};
+    boxes.forEach(function(b){ if(b.checked) o[b.dataset.id] = 1; });
+    try { localStorage.setItem(KEY, JSON.stringify(o)); } catch(e){}
+  }
+  function applyDone(){
+    boxes.forEach(function(b){
+      b.checked = !!saved[b.dataset.id];
+      b.closest('tr').classList.toggle('done', b.checked);
+    });
+  }
+  function stats(){
+    var done = boxes.filter(function(b){return b.checked;}).length;
+    var pct = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    document.getElementById('bar').style.width = pct + '%';
+    document.getElementById('pct').textContent = done + ' / ' + boxes.length + ' 已完成';
+  }
+
+  var fp = 'all', fs = 'all', onlyOpen = false, query = '';
+  function matchStatus(s){
+    if (fs === 'all') return true;
+    if (fs === 'open') return s === 'open' || s === 'changed';
+    return s === fs;
+  }
+  function render(){
+    query = document.getElementById('q').value.trim().toLowerCase();
+    document.querySelectorAll('section[data-sec]').forEach(function(sec){
+      var visible = 0;
+      sec.querySelectorAll('tr[data-p]').forEach(function(tr){
+        var show = (fp === 'all' || tr.dataset.p === fp)
+                && matchStatus(tr.dataset.s)
+                && (!onlyOpen || !tr.querySelector('input[data-id]').checked)
+                && (!query || tr.textContent.toLowerCase().indexOf(query) !== -1);
+        tr.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      var staticOnly = !sec.querySelector('tr[data-p]');
+      sec.style.display = (visible || staticOnly) ? '' : 'none';
+    });
+    stats();
+  }
+
+  boxes.forEach(function(b){
+    b.addEventListener('change', function(){
+      saved[b.dataset.id] = b.checked ? 1 : 0;
+      b.closest('tr').classList.toggle('done', b.checked);
+      store(); render();
+    });
+  });
+  document.getElementById('q').addEventListener('input', render);
+  function bindGroup(attr, setter){
+    document.querySelectorAll('button['+attr+']').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('button['+attr+']').forEach(function(b){b.classList.remove('on');});
+        btn.classList.add('on'); setter(btn.getAttribute(attr)); render();
+      });
+    });
+  }
+  bindGroup('data-fp', function(v){ fp = v; });
+  bindGroup('data-fs', function(v){ fs = v; });
+  var oo = document.getElementById('only-open');
+  oo.addEventListener('click', function(){ onlyOpen = !onlyOpen; oo.classList.toggle('on', onlyOpen); render(); });
+  document.getElementById('reset').addEventListener('click', function(){ saved = {}; store(); applyDone(); render(); });
+
+  function count(f){ return rows.filter(f).length; }
+  document.getElementById('s-all').textContent = boxes.length;
+  ['p0','p1','p2'].forEach(function(p){
+    document.getElementById('s-'+p).textContent = count(function(r){ return r.dataset.p === p.toUpperCase(); });
+  });
+  document.getElementById('s-fixed').textContent   = count(function(r){ return r.dataset.s === 'fixed'; });
+  document.getElementById('s-partial').textContent = count(function(r){ return r.dataset.s === 'partial'; });
+  document.getElementById('s-open').textContent    = count(function(r){ return r.dataset.s === 'open' || r.dataset.s === 'changed'; });
+  document.getElementById('s-new').textContent     = count(function(r){ return r.dataset.s === 'new'; });
+  applyDone(); render();
+})();
+</script>
+</body>
+</html>
