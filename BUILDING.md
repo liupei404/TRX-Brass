@@ -243,11 +243,29 @@ sha256sum dosfstools-4.2.tar.gz   # 应为 64926eeb...b527
 `64926eebf90092dca21b14259a5301b7b98e7b1943e8a201c7d726084809b527`，与
 `package/dosfstools/dosfstools.hash` 一致；缓存放在 `dl/dosfstools/` 即可。
 
-> 进度（2026-11-10 04:36）：编译已跑约 1 小时 24 分、日志约 48 MB、671 个
-> `>>>` 阶段，`target/` 已 327 MB；工具链、`glibc` / `dbus` / `busybox` /
-> `gnutls` / `sqlite` / `zeromq` / `dbus-glib` 等已通过，正在
-> `host-dosfstools 4.2 Downloading`（镜像打包工具阶段）。续编日志无致命错误
-> （`Error 1 (ignored)`、个别镜像 404/403 均非致命）。`images/` 仍为空，
+#### SourceForge 下载长时间停滞
+
+`jpeg-turbo 2.1.5` 从 `downloads.sourceforge.net` 下载时速率掉到约 5 KB/s，
+到 81% 后完全停滞 12 分钟（wget 默认 read timeout 很长，会一直挂着）。处理办法是
+先从 Buildroot 备份镜像取同一发布包放进缓存，再让卡住的连接退出；Buildroot 的
+`dl-wrapper` 会自动尝试下一个 URI，编译不中断：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system/buildroot-2024.02/dl/jpeg-turbo
+wget -4 --tries=3 --timeout=40 -O libjpeg-turbo-2.1.5.tar.gz \
+  'https://sources.buildroot.net/jpeg-turbo/libjpeg-turbo-2.1.5.tar.gz'
+sha256sum libjpeg-turbo-2.1.5.tar.gz   # bc12bc9d...ddaf
+PID=$(pgrep -f 'wget --passive-ftp.*libjpeg-turbo-2.1.5' | head -1)
+kill -TERM "$PID"                      # 只终止卡住的连接，不动 make
+```
+
+镜像包 sha256 `bc12bc9dce55300c6bf4342bc233bcc26bd38bf289eedf147360d731c668ddaf`
+与 `package/jpeg-turbo/jpeg-turbo.hash` 一致。实测终止后编译立即继续
+（`jpeg` Installing to target → `host-kmod`），`make` 没有退出，无需续编。
+
+> 进度（2026-11-10 05:13）：编译约 2 小时、日志约 52 MB、930+ 个 `>>>` 阶段，
+> `target/` 353 MB；`libnl` / `iw` / `jpeg-turbo` / `host-kmod` 等已过。续编日志
+> 无新的致命错误（旧的 boost hash 噪音是下载重试，已自愈）。`images/` 仍为空，
 > `sdcard.img` 要等内核、U-Boot、GUI 和 genimage 全部完成才出现。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
