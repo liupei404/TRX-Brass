@@ -274,10 +274,27 @@ GitHub `.../files/<附件 id>/` 这类用户附件同理：`liberation 2.1.5` �
 `libcyaml` / `ext-liquid-dsp` / `libspecbleach` / `axis-fifo` / `jpeg-turbo` /
 `liberation` / `dosfstools`；`rhvoice` 是 git clone，已验证连通。
 
-> 进度（2026-11-10 05:17）：编译约 2 小时 05 分、日志约 52 MB、近千个 `>>>`
-> 阶段，`target/` 354 MB；`liberation` / `libgpiod` / `libxml2` 等已过。续编日志
-> 无新的致命错误。`images/` 仍为空，`sdcard.img` 要等内核、U-Boot、GUI 和
-> genimage 全部完成才出现。
+`host-intltool 0.51.0` 从 `launchpad.net` 下载时 IPv6 连接超时（wget 会逐个
+IPv6 地址等超时，很慢）。同样从 `sources.buildroot.net/intltool/` 取包放进
+`dl/intltool/`，再终止卡住的 `wget`；sha256
+`67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd` 与
+`package/intltool/intltool.hash` 一致（强制 `wget -4` 直连 launchpad 也能得到
+同样的包）。实测 `make` 未退出，编译从 `host-intltool` 继续到 `host-libxml2`。
+
+**注意 `images/` 里出现文件不等于固件完成**：编译后期 `linux-firmware` 会先把
+蓝牙 / Wi-Fi 固件放到 `images/` 的子目录（`ar3k/`、`qca/`、`rtl_bt/` 等），
+`host-genimage` / `host-mtools` / `host-dosfstools` 也会先装好。真正要等的文件是
+`images/sdcard.img`，它由最后阶段的 genimage 生成，同时还会出现 `boot.bin`、
+`uImage`、`brass.dtb`、`system.bit`、`rootfs.ext4`。
+
+`nano` 的 configure 会打印 `groff: fatal error: cannot load 'DESC' ...` 并给出
+"Will not generate HTML version of man pages" 警告，这只是 HTML man 页支持探测
+失败，随后正常生成 Makefile，不用处理。
+
+> 进度（2026-11-10 05:35）：编译约 2 小时 22 分、日志约 54 MB、1197 个 `>>>`
+> 阶段，`target/` 413 MB；`host-genimage` / `host-mtools` / `linux-firmware` /
+> `nano` / `host-intltool` 已过，正在 `host-libxml2 Building`。续编日志无新的
+> 致命错误。`sdcard.img` 仍未生成，要等内核、U-Boot、GUI 和 genimage 完成。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
