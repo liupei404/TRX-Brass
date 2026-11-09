@@ -144,6 +144,45 @@ make -j2 2>&1 | tee -a /tmp/brass-build.log
 `config_brass.sh`。若以后 `make clean` 或换输出目录重新全编译，需在它 configure
 完成后再执行一次上面的 `sed`。2026-11-10 本次已对当前输出目录执行过该修复。
 
+续编时又在 `host-e2fsprogs 1.47.0` 遇到同类问题：`lib/ext2fs/tdb.c:113` 的
+`typedef int bool;` 在 C23 下 `bool` 已是关键字。已把该处改成仅当
+`__STDC_VERSION__ < 202311L` 时才 typedef（同样是本地构建目录改动，不进 git）。
+两处都是 GCC 15 默认 C23 与 Buildroot 2024.02 老包的兼容问题，不是 GUI 代码问题；
+后续若还有同类报错，按日志定位、加条件编译即可。想一次避开，可安装 gcc-14
+（默认仍是 gnu17）后重新全编译（本方案本次未实测）：
+
+```bash
+sudo apt install -y gcc-14 g++-14
+cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass
+make clean
+make HOSTCC=gcc-14 HOSTCXX=g++-14 -j2 2>&1 | tee /tmp/brass-build.log
+```
+
+`make clean` 会清掉已编的 host 工具重新来，下载的源码缓存仍保留。
+
+### 第一次必须全编译吗？以后只改 GUI 呢
+
+**第一次必须全编译一次**（2–5 小时）。`sdcard.img` 不是「一个 GUI 程序」，而是整张
+SD 卡的快照：U-Boot、Linux 内核、设备树、FPGA `system.bit`、几百个库（glibc /
+Python / 音频 / DSP / LVGL）、rootfs 和 DATA 分区。第一次编译时，把 x86 电脑代码
+变成 ARM 板子能跑的**交叉编译器**、内核，以及打包 IMG 的工具都还不存在
+（`output_brass/host/bin/*-gcc` 尚未生成），必须先全部造出来；GUI 只是 rootfs 里
+一个 `/usr/sbin/brass_gui`。所以现在没法只打包 GUI。
+
+**全编译成功之后**，再改 `Firmware/gui/` 就只要几分钟：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass
+make brass-gui-dirclean     # 删掉 GUI 构建目录，强制重新同步仓库内 GUI 源码
+make -j2                     # 只重编 GUI 并更新 rootfs / sdcard.img
+```
+
+其它包不会重编，更新后的 `sdcard.img` 仍在 `images/`。
+
+**更快的调试方式（不出 IMG）**：全编译产出的 `output_brass/host/` 里有交叉工具链，
+可用 `Firmware/gui/buildroot/cmake.sh` 单独编出 `brass_gui`，`scp` 到已经烧好系统的
+板子 `/usr/sbin/brass_gui`，再执行 `/etc/init.d/S99gui restart` 即可生效。
+
 ### 新固件在哪里找
 
 编译完成后，全部产物在：
