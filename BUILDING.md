@@ -327,10 +327,21 @@ cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass
 make -j2 2>&1 | tee -a /tmp/brass-build.log
 ```
 
-> 进度（2026-11-10 06:00）：编译在 `uboot custom Building` 的 SPL 对齐步骤停止，
-> `make` 已退出，需要上面这条续编命令。此前约 2 小时 45 分、日志约 62 MB，
-> `host-gnutls` / `host-libopenssl` / `host-openssl` 等已过。`images/` 里只有
-> `linux-firmware` 的蓝牙固件，`sdcard.img` 仍未生成。
+2026-11-10 06:03 已在 SSH 终端按上面命令续编，修复验证通过：`uboot custom`
+Building → Installing to images directory 完成，`images/` 里出现 `boot.bin`
+（131 KB）、`u-boot.bin`、`u-boot.img`。无需清目录、无需重新配置。
+
+续编后 `host-uboot-tools 2021.07` 又卡在 `ftp://ftp.denx.de/pub/u-boot/` 的
+FTP 连接超时（IPv6 / IPv4 都不通）。同样从 `sources.buildroot.net/uboot-tools/`
+取 `u-boot-2021.07.tar.bz2`（17 MB，sha256
+`312b7eeae44581d1362c3a3f02c28d806647756c82ba8c72241c7cdbe68ba77e` 与
+`package/uboot-tools/uboot-tools.hash` 一致）放进 `dl/uboot-tools/`，再终止卡住的
+`wget` 让 `dl-wrapper` 换源即可；`make` 未退出。
+
+> 进度（2026-11-10 06:13）：续编约 10 分钟，日志约 62 MB、1433 个 `>>>` 阶段；
+> U-Boot 产物已生成，`usbmount` / `host-python-markupsafe` 等已过。续编日志无
+> 新的致命错误。`images/` 里已有 `boot.bin` / `u-boot.bin` / `u-boot.img` 和蓝牙
+> 固件，但 `sdcard.img` 仍未生成，还要等内核、GUI、rootfs 打包和 genimage。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
