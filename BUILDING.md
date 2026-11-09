@@ -165,7 +165,9 @@ HOSTCXX += -std=gnu++17
 `HOSTCC` / `HOSTCXX` 仍指向系统的 `gcc 15` / `g++ 15`，只是让 host 工具回到 C17
 模式、把老代码常见诊断降级为警告。已用 `make printvars VARS='HOSTCC HOSTCXX'`
 验证展开正确，`.config` 不变、不会全量重编。后续同类错误由这一处设置挡掉；
-`host-gmp` 的 configure 会在下次 `make` 时重新执行并自动通过，无需改它源码。
+`host-gmp` 的 configure 已在随后续编中重新执行并完整通过（Configuring →
+Building → Installing），接着 `host-mpfr 4.1.1` 也正常进入 Building，日志无报错，
+无需改它们源码。
 
 前三处对本地构建目录的源码/生成文件修改仍保留着，但**以后重新全新编译不再需要**
 （统一参数已覆盖）；`buildroot-2024.02/` 本身未改动。
