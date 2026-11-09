@@ -7,6 +7,7 @@
 
 # Local build outputs (already tracked files are unaffected)
 Firmware/system/output_brass/
+Firmware/system/output_brass.old/
 Firmware/system/buildroot-*.tar.gz
 Firmware/gui/build/
 Firmware/gui/buildroot/build/

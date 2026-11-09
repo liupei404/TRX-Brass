@@ -70,17 +70,21 @@ the kernel; the GUI is started by `/etc/init.d/S99gui`.
 
 ```bash
 cd /home/bh8cgj/TRX-Brass/Firmware/system
-./config_brass.sh                 # 重新生成 output_brass/.config（brass7020_defconfig）
+mv output_brass output_brass.old    # 旧配置与旧产物另存，不删除（已另存过可跳过）
+./config_brass.sh                   # 在全新 output_brass/ 生成 .config（brass7020_defconfig）
 cd output_brass
-make clean                         # 清掉旧 build/host/target/images，保留 .config 与 dl 缓存
 nohup make -j2 </dev/null > /tmp/brass-build.log 2>&1 &
 tail -f /tmp/brass-build.log
 ```
 
-`config_brass.sh` 会覆盖旧的 `output_brass/.config`，所以「以前改过的配置」一律
-不保留。`make clean` 只删构建产物，下载的源码缓存 `Firmware/system/buildroot-2024.02/dl/`
-会留着，可以省去重复下载。首次全编译（glibc 工具链 + Python3 + Linux 内核 + GUI）
-预计 2–5 小时；编译日志在 `/tmp/brass-build.log`，结果以日志为准。
+`config_brass.sh` 会按当前仓库文件重新生成 `.config`，所以「以前改过的配置」一律
+不保留。本机批量删除保护会拦截 `make clean`，因此改用「把旧输出目录另存」实现
+同样的全新编译：新目录里没有任何旧包缓存，下载的源码缓存
+`Firmware/system/buildroot-2024.02/dl/` 仍会复用；`output_brass.old/` 已被
+`.gitignore` 忽略，确认新固件没问题后可自行删除。若你的环境允许批量删除，
+也可以在 `cd output_brass` 后执行 `make clean` 代替另存。
+首次全编译（glibc 工具链 + Python3 + Linux 内核 + GUI）预计 2–5 小时；
+编译日志在 `/tmp/brass-build.log`，结果以日志为准。
 
 ### 新固件在哪里找
 

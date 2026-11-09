@@ -226,7 +226,7 @@ git submodule update --init --recursive</pre>
 <section>
   <h2>八、7020 全新编译与产物（2026-11-10）</h2>
   <div class="body">
-    <p>按用户要求忽略此前遗留的 <code>output_brass/.config</code> 与构建产物，以当前仓库文件重新执行 <code>config_brass.sh</code>（<code>brass7020_defconfig</code>）、<code>make clean</code> 后全新编译。编译流程、产物路径、下载与烧录方式已写在 <code>BUILDING.md</code> 第 1.1 节，<code>README.md</code> 与 <code>Docs/TRX-Brass-TODO.html</code> 同步。</p>
+    <p>按用户要求忽略此前遗留的 <code>output_brass/.config</code> 与构建产物：把旧输出目录另存为 <code>output_brass.old</code>（本机批量删除保护拦截 <code>make clean</code>，故不删除任何文件），再以当前仓库文件重新执行 <code>config_brass.sh</code>（<code>brass7020_defconfig</code>）并全新编译。编译流程、产物路径、下载与烧录方式已写在 <code>BUILDING.md</code> 第 1.1 节，<code>README.md</code> 与 <code>Docs/TRX-Brass-TODO.html</code> 同步。</p>
     <table>
       <thead><tr><th style="width:28%">检查 / 结论</th><th>实测结果</th></tr></thead>
       <tbody>
