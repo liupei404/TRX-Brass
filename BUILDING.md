@@ -228,10 +228,27 @@ gzip -t xlnx_rebase_v6.1_LTS_2023.1.tar.gz    # 必须校验，避免半截包
 sha256 校验；只有 212 MB 内核这种大包会三次全断，才必须预缓存。`rhvoice` 用
 `SITE_METHOD = git`，实测 `git ls-remote` 正常，不受归档 TLS 问题影响。
 
-> 进度（2026-11-10 03:36）：工具链已完成，`glibc` / `dbus` / `expat` /
-> `alsa-lib` / `host-gettext` / `host-libffi` 等已通过，正在 `host-ninja Downloading`；
-> 续编日志无致命错误（`Error 1 (ignored)`、个别镜像 404/403 均非致命）。`images/`
-> 仍为空，`sdcard.img` 要等全编译结束才出现。
+GitHub **release asset** 是另一类：`host-dosfstools 4.2` 从
+`github.com/dosfstools/dosfstools/releases/download/v4.2/` 下载时三次 TLS 中断
+（release 资源不会 302 到 codeload）。此时可从 Buildroot 备份镜像取同一发布包：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system/buildroot-2024.02/dl/dosfstools
+wget -4 --tries=3 --timeout=40 -O dosfstools-4.2.tar.gz \
+  'https://sources.buildroot.net/dosfstools/dosfstools-4.2.tar.gz'
+sha256sum dosfstools-4.2.tar.gz   # 应为 64926eeb...b527
+```
+
+已实测该镜像与 github release 两种来源的 sha256 都是
+`64926eebf90092dca21b14259a5301b7b98e7b1943e8a201c7d726084809b527`，与
+`package/dosfstools/dosfstools.hash` 一致；缓存放在 `dl/dosfstools/` 即可。
+
+> 进度（2026-11-10 04:36）：编译已跑约 1 小时 24 分、日志约 48 MB、671 个
+> `>>>` 阶段，`target/` 已 327 MB；工具链、`glibc` / `dbus` / `busybox` /
+> `gnutls` / `sqlite` / `zeromq` / `dbus-glib` 等已通过，正在
+> `host-dosfstools 4.2 Downloading`（镜像打包工具阶段）。续编日志无致命错误
+> （`Error 1 (ignored)`、个别镜像 404/403 均非致命）。`images/` 仍为空，
+> `sdcard.img` 要等内核、U-Boot、GUI 和 genimage 全部完成才出现。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
