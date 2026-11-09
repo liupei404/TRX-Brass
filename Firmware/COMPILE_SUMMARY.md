@@ -1,5 +1,10 @@
 # System 文件夹分析与编译指南总结
 
+> **时效说明**：本文是早期的目录结构与方法整理，部分命令、路径和时间估计未同步当前仓库。
+> 全新编译流程、产物位置、`sdcard.img` 下载与烧录、以及 GCC 15 / 内核下载 /
+> uutils dd 等环境兼容处理，一律以 [../BUILDING.md](../BUILDING.md) 为准；
+> 当前组件索引见 [README.md](README.md)。
+
 ## 📋 System 文件夹分析
 
 ### 结构概述
@@ -51,14 +56,14 @@ system/
 ```
 你修改了什么？
 │
-├─ 仅 GUI 源代码（.c/.h 文件）
-│  └─ → 方法 A：快速交叉编译（1-3 分钟）
+├─ 仅 GUI 源代码（.c/.h 文件），只调试不出镜像
+│  └─ → 方法 A：gui/buildroot/cmake.sh 单独交叉编译（1-3 分钟）
 │
-├─ GUI + 配置文件（CMakeLists.txt 等）
-│  └─ → 方法 B：重新编译 GUI 包（5-10 分钟）
+├─ GUI + 配置文件（CMakeLists.txt 等），要重出镜像
+│  └─ → 方法 B：make brass-gui-dirclean && make -j2（几分钟）
 │
-└─ 完整固件（内核、配置等）
-   └─ → 方法 C：完整固件编译（20-60 分钟）
+└─ 首次编译 / 改内核或 defconfig
+   └─ → 方法 C：./config_brass.sh 后 make -j2（2-5 小时）
 ```
 
 ---
@@ -167,11 +172,11 @@ make BR2_EXTERNAL=../br2_external O=../output_brass -j$(nproc)
 
 ## 📊 编译时间对比
 
-| 方法 | 初次编译 | 增量编译 | 适用场景 |
+| 方法 | 首次 | 之后增量 | 适用场景 |
 |------|----------|----------|---------|
-| **方法 A**: 直接交叉编译 | 5-10 分钟 | 1-3 分钟 | GUI 代码修改 |
-| **方法 B**: 包重新编译 | 30-60 分钟 | 5-10 分钟 | GUI + 配置 |
-| **方法 C**: 完整编译 | 2-4 小时 | 20-60 分钟 | 内核/系统 |
+| **方法 A**: `gui/buildroot/cmake.sh` 单独交叉编译 | 需先完成全编译才有工具链 | 1-3 分钟 | 只调试 GUI，不出镜像 |
+| **方法 B**: `make brass-gui-dirclean && make -j2` | 需先完成全编译 | 几分钟 | 改 GUI 后重出 `sdcard.img` |
+| **方法 C**: `./config_brass.sh` 后 `make -j2` 全编译 | 2-5 小时 | 视改动而定 | 首次编译 / 改内核或 defconfig |
 
 ---
 
@@ -263,7 +268,9 @@ make BR2_EXTERNAL=../br2_external O=../output_brass V=1
 
 完整的编译和部署指南请参考：
 
-**📖 [BUILD_GUIDE.md](BUILD_GUIDE.md)** - 详细的编译和部署指南
+**📖 [../BUILDING.md](../BUILDING.md)** - 当前有效的完整编译与部署指南
+
+（`BUILD_GUIDE.md` 已不在仓库中；上文的目录结构与命令示例为历史记录。）
 
 包含内容：
 - 完整的项目结构说明

@@ -1,346 +1,145 @@
 # TRX Brass Firmware
 
-**TRX Brass 收发机完整固件项目**
+本目录包含 TRX-Brass 的 GUI 应用、Buildroot 系统镜像构建树和 MicroBlaze FFT 固件源码。
+**完整构建流程、产物路径、烧录与已知环境兼容问题以仓库根目录的
+[../BUILDING.md](../BUILDING.md) 为准**，本文件只作组件索引。
 
-## 项目概述
+## 组件说明
 
-TRX Brass Firmware 是一个完整的业余无线电收发机固件项目，基于嵌入式 Linux 和 Buildroot 构建，包含了完整的 GUI 界面、操作系统内核和 FPGA 配置。
+| 目录 | 内容 |
+|------|------|
+| `gui/` | GUI 应用（本仓库普通目录，`brass-gui.mk` 用 `SITE_METHOD = local` 直接构建）；`gui/lvgl/` 是唯一的 git 子模块，版本 9.5 |
+| `system/` | Buildroot 2024.02 源码与 `br2_external` 外部树，`config_brass.sh` 由 defconfig 生成 `output_brass/.config` |
+| `microblase/` | MicroBlaze FFT 固件源码；`mb.code` / `mb.data` 已预编译在 `gui/rootfs/usr/share/brass/fw/` |
 
-### 组件说明
+许可证：自有 GUI 代码为 LGPL-2.1-or-later，见 [gui/LICENSE](gui/LICENSE)；
+第三方组件保留各自许可证。上游作者 Belousov Oleg (R1CBU)，
+上游仓库 `https://github.com/strijar/TRX-Brass`；本仓库托管在
+`https://github.com/liupei404/TRX-Brass`。
 
-- **GUI** - 基于 LVGL 的图形用户界面，提供电台控制功能
-- **System** - 基于 Buildroot 的构建系统，生成完整的 Linux 固件
-- **Microblase** - FPGA 模块配置
-
-### 版本信息
-- **当前版本**: v0.6.0
-- **许可证**: LGPL-2.1-or-later
-- **版权**: (c) 2022-2025 Belousov Oleg aka R1CBU
-
----
-
-## 项目结构
+## 目录结构
 
 ```
-TRX-Brass/Firmware/
-├── gui/              # GUI 应用程序
-│   ├── src/          # GUI 源代码
-│   ├── lvgl/         # LVGL 图形库
-│   └── README.md     # GUI 详细文档
-│
-├── system/           # Buildroot 构建系统
-│   ├── br2_external/ # 外部扩展包
-│   │   ├── board/   # 板级配置
-│   │   ├── configs/ # Buildroot 配置
-│   │   └── package/ # 软件包
-│   └── config_brass.sh # 构建初始化脚本
-│
-├── microblase/       # FPGA 模块
-│
-└── README.md         # 本文件
+Firmware/
+├── README.md                  # 本文件
+├── COMPILE_SUMMARY.md         # system/ 目录与构建整理
+├── gui/
+│   ├── CMakeLists.txt
+│   ├── src/                   # 应用源码（含 power.c 长按关机）
+│   ├── lvgl/                  # LVGL 9.5，唯一子模块
+│   ├── lv_drivers/            # LVGL 驱动
+│   ├── rootfs/                # 打进 rootfs 的 S99gui、brass_daemon 等
+│   ├── buildroot/             # 单独交叉编译 GUI 的脚本
+│   ├── tests/                 # 主机端单元测试
+│   ├── LICENSE
+│   └── README.md
+├── microblase/                # MicroBlaze FFT 固件源码
+└── system/
+    ├── br2_external/
+    │   ├── board/             # 板级配置、7020 system.bit、U-Boot 补丁
+    │   ├── configs/           # brass7020_defconfig / brass7010_defconfig
+    │   └── package/           # 自定义软件包（brass-gui、rhvoice 等）
+    ├── buildroot-2024.02/
+    ├── buildroot-2024.02.tar.gz
+    ├── config_brass.sh
+    └── output_brass/          # 构建产物，被 .gitignore 忽略，不进仓库
 ```
 
----
+## 快速开始（简版）
 
-## 快速开始
-
-### 前置要求
-
-- **操作系统**: Linux (Ubuntu 20.04+ 推荐)
-- **编译工具**: GCC/G++, Make, CMake
-- **交叉编译器**: arm-linux-gnueabihf-gcc
-- **Python**: 3.x
-- **磁盘空间**: >= 20GB 可用空间
-
-### 初次编译
-
-#### 1. 克隆仓库
-
-```bash
-git clone https://github.com/R1CBU/TRX-Brass.git
-cd TRX-Brass/Firmware
-```
-
-#### 2. 编译完整固件
+请在**独立 SSH 会话**中执行（不要在 IDE 内置终端跑完整编译，删除保护 shim 会拦截
+Buildroot 的 `rm`），完整说明见 [../BUILDING.md](../BUILDING.md) 1.1 节：
 
 ```bash
 cd system
-bash config_brass.sh
-
-# 等待编译完成（2-4 小时）
-# 固件生成在：output_brass/images/
+mv output_brass output_brass.old     # 旧产物另存；本机 make clean 会被删除保护拦截
+./config_brass.sh                    # 只生成 .config，不编译
+cd output_brass
+make -j2 2>&1 | tee /tmp/brass-build.log
 ```
 
-#### 3. 部署固件
+产物为 `system/output_brass/images/sdcard.img`，首次全编译约 2–5 小时。
+编译期间 `images/` 里先出现蓝牙固件子目录是正常现象，不代表镜像完成。
+
+全编译成功后只改 `gui/`：
 
 ```bash
-# 写入 SD 卡
-dd if=output_brass/images/sdcard.img of=/dev/sdX bs=4M status=progress
-sync
+cd system/output_brass
+make brass-gui-dirclean   # 强制重新 rsync 仓库内 GUI 源码
+make -j2                  # 几分钟内重出 sdcard.img
 ```
 
----
+只调试 GUI、不出镜像：用 `gui/buildroot/cmake.sh` 交叉编译出 `brass_gui`，
+`scp` 到板子 `/usr/sbin/brass_gui`，再 `/etc/init.d/S99gui restart`。
 
-## 重新编译指南
+MicroBlaze FFT 固件可选重编（需要 Xilinx `mb-gcc`）：`cd microblase && make`。
+仓库已带预编译的 `mb.code` / `mb.data`，缺 `mb-gcc` 不影响出镜像。
 
-### 快速参考
+## 重新编译场景
 
-| 场景 | 适用情况 | 预计时间 |
-|------|---------|---------|
-| **仅 GUI** | 修改了 GUI 源代码 | 1-3 分钟 |
-| **GUI + 系统** | 修改了配置文件 | 5-15 分钟 |
-| **完整固件** | 修改了内核或系统 | 20-60 分钟 |
-
-### 详细编译说明
-
-详细的编译步骤、场景分析和故障排除请参考：
-
-**📖 [BUILD_GUIDE.md](BUILD_GUIDE.md)** - 完整的编译和部署指南
-
-#### 快速命令
-
-```bash
-# 场景 1: 仅重新编译 GUI
-cd gui/build && make -j$(nproc)
-
-# 场景 2: 重新编译 GUI 包
-cd system/buildroot-2024.02
-make BR2_EXTERNAL=../br2_external O=../output_brass brass-gui-rebuild
-
-# 场景 3: 完整固件重新编译
-make BR2_EXTERNAL=../br2_external O=../output_brass -j$(nproc)
-```
-
----
+| 场景 | 做法 | 预计时间 |
+|------|------|---------|
+| 首次出镜像 | `./config_brass.sh` 后 `make -j2` 全编译 | 2–5 小时 |
+| 只改 `gui/` | `make brass-gui-dirclean && make -j2` | 几分钟 |
+| 只调试 GUI，不出镜像 | `gui/buildroot/cmake.sh` + `scp` 覆盖板子程序 | 1–3 分钟 |
+| 改内核 / defconfig | 重新生成 `.config` 后 `make -j2` | 视改动而定 |
 
 ## 主要功能
 
-### GUI 功能 (v0.6.0)
+- 多模式支持：LSB、USB、CW、CWR、AM、NFM、RTTY、Olivia、FT8
+- 频率控制、实时 FFT 频谱显示、CW 编码/解码
+- ATU 天调、SWR 扫描
+- 电源管理：短按切背光；长按 1000 ms 保存设置、`sync()` 后关机
+- 系统：Linux 6.1（Xilinx 定制）、Buildroot 2024.02、ALSA / PipeWire、RHVoice、
+  Liquid-DSP、libspecbleach
 
-- ✅ 多模式支持：LSB、USB、CW、CWR、AM、NFM、RTTY、Olivia
-- ✅ 频率控制：精确调节，步进可选（10Hz-5000Hz）
-- ✅ 频谱显示：实时 FFT 频谱分析
-- ✅ 数字模式：FT8、RTTY、Olivia
-- ✅ CW 电报：完整编码/解码功能
-- ✅ ATU 天调：自动天线调谐器
-- ✅ SWR 扫描：驻波比扫描
-- ✅ **电源管理**：背光控制和系统关机（v0.6.0 新增）
+## 运行与排障
 
-### 系统功能
+- GUI 由 `/etc/init.d/S99gui` 启动 `brass_daemon`，再由它调用 `/usr/sbin/brass_gui`
+- 串口调试口 `ttyPS0,115200`，默认 root 口令 `123`
+- 交叉工具链由 Buildroot 自行生成在 `system/output_brass/host/`，主机不需要预装
+  `arm-linux-gnueabihf-gcc`
+- 镜像下载、烧录命令和各类构建报错处理见 [../BUILDING.md](../BUILDING.md)
 
-- ✅ Linux 6.1 内核（Xilinx 定制）
-- ✅ Buildroot 根文件系统
-- ✅ Zynq-7000 FPGA 支持
-- ✅ 音频处理（ALSA/PipeWire）
-- ✅ 语音合成（RHVoice）
-- ✅ 数字信号处理（Liquid-DSP）
-- ✅ 编解码器（Codec2）
+## 文档索引
 
----
+- [../BUILDING.md](../BUILDING.md) — 构建、产物位置、烧录、环境兼容处理（主文档）
+- [../README.md](../README.md) — 项目总览
+- [COMPILE_SUMMARY.md](COMPILE_SUMMARY.md) — `system/` 目录与构建整理
+- [gui/README.md](gui/README.md) — GUI 说明
+- [../Docs/TRX-Brass-CodeChanges.html](../Docs/TRX-Brass-CodeChanges.html) — 代码修改记录（含电源管理）
+- [../Docs/TRX-Brass-TODO.html](../Docs/TRX-Brass-TODO.html) — 版本差异分析与待办清单
 
-## 文档
-
-### 项目文档
-
-- **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - 编译和部署完整指南
-- **[gui/README.md](gui/README.md)** - GUI 项目详细文档
-
-### 电源管理文档 (v0.6.0)
-
-- **[gui/src/hw/POWER_QUICK_REFERENCE.md](gui/src/hw/POWER_QUICK_REFERENCE.md)** - 快速参考
-- **[gui/src/hw/POWER_CONTROL.md](gui/src/hw/POWER_CONTROL.md)** - 详细功能说明
-- **[gui/src/hw/POWER_USAGE_EXAMPLE.md](gui/src/hw/POWER_USAGE_EXAMPLE.md)** - 使用示例
-- **[gui/src/hw/IMPLEMENTATION_SUMMARY.md](gui/src/hw/IMPLEMENTATION_SUMMARY.md)** - 实现总结
-- **[gui/src/hw/POWER_CHECKLIST.md](gui/src/hw/POWER_CHECKLIST.md)** - 检查清单
-
----
+> 电源管理实现在 `gui/src/power.c` / `power.h`，主机端测试在 `gui/tests/power_test.c`。
+> 本仓库没有 `BUILD_GUIDE.md`，也没有 `POWER_QUICK_REFERENCE.md` / `POWER_CONTROL.md`
+> 等文档，旧版 README 里的这些链接已移除。
 
 ## 硬件要求
 
 ### 开发环境
-- **CPU**: x86_64，>= 4 核心推荐
-- **RAM**: >= 8GB
-- **存储**: >= 20GB 可用空间
-- **网络**: 稳定的互联网连接（下载依赖）
+
+- x86_64，>= 4 核、>= 8 GiB 内存、>= 20 GiB 可用空间
+- Ubuntu（已在 25.10 / GCC 15 / uutils coreutils 上验证），或 Windows 终端 SSH 到 Ubuntu
+- 主机工具：`make` / `gcc` / `g++` / `wget` / `bison` / `flex` / `perl` / `rsync` /
+  `cpio` / `python3` / CMake ≥ 3.23
+- 编译镜像不需要 Vivado / Vitis；仓库已带 7020 的 `system.bit`（Vivado 2019.2 生成）
 
 ### 目标硬件
-- **SoC**: Xilinx Zynq-7000 (Zynq 7020/7010)
-- **CPU**: ARM Cortex-A9 双核
-- **RAM**: >= 512MB
-- **存储**: >= 4GB SD 卡
-- **显示屏**: 800x480 触摸屏
-- **音频**: 支持的音频输入/输出
 
----
-
-## 开发指南
-
-### GUI 开发
-
-```bash
-# GUI 开发流程
-1. 修改代码: gui/src/xxx.c
-2. 快速编译: cd gui/build && make
-3. 部署测试: scp brass root@device:/usr/sbin/
-4. 循环测试
-```
-
-### 系统开发
-
-```bash
-# 系统开发流程
-1. 修改配置: system/br2_external/xxx
-2. 重新编译: make xxx-rebuild
-3. 生成固件: make
-4. 部署测试
-```
-
-详细开发指南请参考 [BUILD_GUIDE.md](BUILD_GUIDE.md)。
-
----
-
-## 故障排除
-
-### 编译问题
-
-**Q: 交叉编译工具链未找到**
-```bash
-sudo apt install gcc-arm-linux-gnueabihf
-```
-
-**Q: Buildroot 下载失败**
-```bash
-# 设置代理或手动下载到 dl/ 目录
-export http_proxy=http://proxy.example.com:8080
-```
-
-**Q: 磁盘空间不足**
-```bash
-# 清理构建目录
-make BR2_EXTERNAL=../br2_external O=../output_brass clean
-```
-
-### 运行时问题
-
-**Q: GUI 无法启动**
-```bash
-# 检查日志
-journalctl -u brass -f
-
-# 检查权限
-ls -l /usr/sbin/brass
-```
-
-**Q: 显示无输出**
-```bash
-# 检查 framebuffer
-ls /dev/fb*
-
-# 检查背光
-ls /sys/class/backlight/
-```
-
-更多故障排除请参考 [BUILD_GUIDE.md](BUILD_GUIDE.md)。
-
----
-
-## 贡献指南
-
-欢迎贡献代码和改进！
-
-### 提交代码
-
-1. Fork 项目
-2. 创建功能分支
-3. 提交更改
-4. 推送分支
-5. 创建 Pull Request
-
-### 代码规范
-
-- 遵循 Linux 内核代码风格
-- 使用 Doxygen 风格注释
-- 添加 SPDX 许可证标识
-- 更新相关文档
-
----
-
-## 版本历史
-
-### v0.6.0 (2025-02-16)
-- ✅ 新增完整的电源管理功能
-- ✅ 实现背光开关控制
-- ✅ 实现系统关机功能
-- ✅ 添加电源状态检测
-- ✅ 完善关机流程
-- ✅ 添加电源管理文档
-
-### v0.5.x
-- 数字模式优化
-- 性能改进
-- Bug 修复
-
-### v0.4.x
-- FT8 支持
-- RTTY 支持
-- Olivia 支持
-
-### v0.3.x
-- CW 功能完善
-- 频谱显示优化
-- 滤波器控制
-
-### v0.2.x
-- 基础 GUI 框架
-- LVGL 集成
-- 硬件抽象层
-
-### v0.1.x
-- 初始版本
-- 基本频率控制
-
----
-
-## 许可证
-
-本项目采用 LGPL-2.1-or-later 许可证。
-
-详见 [gui/LICENSE](gui/LICENSE) 文件。
-
-## 作者
-
-- **主要作者**: Belousov Oleg aka R1CBU
-- **版权**: (c) 2022-2025
-
-## 致谢
-
-- LVGL 图形库
-- Buildroot 项目
-- Xilinx Zynq 平台
-- 业余无线电社区
-
-## 相关链接
-
-- [项目主页](https://github.com/R1CBU/TRX-Brass)
-- [问题跟踪](https://github.com/R1CBU/TRX-Brass/issues)
-- [文档 Wiki](https://github.com/R1CBU/TRX-Brass/wiki)
-
-## 技术支持
-
-- 查看 [README.md](README.md) - 项目概览
-- 查看 [BUILD_GUIDE.md](BUILD_GUIDE.md) - 编译指南
-- 查看 [gui/README.md](gui/README.md) - GUI 文档
-
----
+- Xilinx Zynq-7000（7020 为默认目标，7010 需换 defconfig）
+- ARM Cortex-A9 双核、>= 512 MB RAM、>= 4 GB SD 卡
+- 800×480 触摸屏、音频输入/输出
 
 ## 附录
 
 ### 支持的频段
+
 - **HF**: 160m, 80m, 40m, 30m, 20m, 17m, 15m, 12m, 10m, 6m
 - **VHF**: 2m
 - **UHF**: 70cm
 
 ### 支持的模式
+
 - **SSB**: LSB, USB
 - **CW**: CW, CWR
 - **AM**: AM
@@ -348,15 +147,16 @@ ls /sys/class/backlight/
 - **数字**: RTTY, Olivia, FT8
 
 ### 技术栈
-- **GUI**: LVGL 8.x
-- **操作系统**: Linux 6.1
-- **构建系统**: Buildroot 2024.02
-- **FPGA**: Xilinx Vivado
+
+- **GUI**: LVGL 9.5
+- **操作系统**: Linux 6.1 (`xlnx_rebase_v6.1_LTS_2023.1`)
+- **构建系统**: Buildroot 2024.02 + 外部树 `br2_external`
+- **交叉工具链**: Buildroot 自带 ARM GCC 12.3
+- **FPGA**: 仓库内 `system.bit`（Vivado 2019.2）
 - **音频**: ALSA, PipeWire
-- **数字信号**: Liquid-DSP, Codec2
+- **数字信号**: Liquid-DSP (ext-liquid-dsp), libspecbleach
+- **语音**: RHVoice
 
 ---
 
 **TRX Brass Firmware - 业余无线电收发机完整固件**
-
-*让业余无线电更简单、更强大！*
