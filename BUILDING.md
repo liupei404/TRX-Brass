@@ -120,6 +120,30 @@ make -j2 2>&1 | tee /tmp/brass-build.log
 - 编译期间 `output_brass/images/` 为空是正常的；出现 `sdcard.img` 才算出镜像完成。
 - 全程约 2–5 小时，中途不要在同一个输出目录再启动第二个 `make`。
 
+### GCC 15 兼容性：host-m4 1.4.19
+
+本机 `gcc 15.2.0` 默认按 C23 编译，Buildroot 2024.02 的 `host-m4 1.4.19`
+（gnulib）会把 `_GL_ATTRIBUTE_NODISCARD` 展开成 GCC 无法解析的
+`[[__nodiscard__]]`，在 `lib/gl_oset.h:275` 报
+`error: expected identifier or '(' before 'int'`，编译停在 `host-m4 Building`。
+这与 IDE shim 无关，独立 SSH 终端同样会遇到。
+
+修复方式是改本地构建目录里的生成文件（不进 git），在 `host-m4` **configure
+完成之后**把该宏置空，然后增量续编：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system
+sed -i 's/# define _GL_ATTRIBUTE_NODISCARD \[\[__nodiscard__\]\]/# define _GL_ATTRIBUTE_NODISCARD/' \
+  output_brass/build/host-m4-1.4.19/lib/config.h
+cd output_brass
+make -j2 2>&1 | tee -a /tmp/brass-build.log
+```
+
+`make` 会接着编，已完成的 `host-tar` / `host-zstd` / `host-ccache` 不会重来。
+**不要重新 configure `host-m4`**（会重新生成 `config.h` 覆盖修复），也不要重跑
+`config_brass.sh`。若以后 `make clean` 或换输出目录重新全编译，需在它 configure
+完成后再执行一次上面的 `sed`。2026-11-10 本次已对当前输出目录执行过该修复。
+
 ### 新固件在哪里找
 
 编译完成后，全部产物在：
