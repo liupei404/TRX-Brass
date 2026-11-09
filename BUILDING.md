@@ -193,7 +193,40 @@ gzip -t xlnx_rebase_v6.1_LTS_2023.1.tar.gz    # 必须校验，避免半截包
 `LINUX_HEADERS_DL_SUBDIR = linux`，所以缓存文件必须放在 `dl/linux/` 下且文件名保持
 `xlnx_rebase_v6.1_LTS_2023.1.tar.gz`（该包不校验 hash）。本次已下载并校验完成
 （212 MB，`gzip -t` 通过、tar 可读），续编 `make` 会跳过这段下载；`dl/` 缓存即使在
-`make clean` 后也保留。
+`make clean` 后也保留。2026-11-10 续编实测已生效：`linux-headers` 的
+`.stamp_downloaded` / `.stamp_built` 均已生成。
+
+#### 同批预缓存其它 GitHub 归档包
+
+`brass7020_defconfig` 的 U-Boot 也用 `$(call github,...)` 取
+`xlnx_rebase_v2023.01_2023.1.tar.gz`；外部树中启用的 `axis-fifo`、
+`ext-liquid-dsp`、`libcyaml`、`libspecbleach` 同样走 github.com 归档。为避免
+重演上述 TLS 中断，已从 `codeload.github.com` 预下载并放进各自缓存：
+
+| 包 | 缓存路径（相对 `buildroot-2024.02/dl/`） | 校验 |
+| --- | --- | --- |
+| U-Boot | `uboot/xlnx_rebase_v2023.01_2023.1.tar.gz` | 23 MB；custom tarball 不校验 hash |
+| axis-fifo | `axis-fifo/axis-fifo-69375f12c2393c1c982a05b14e2a9515ad3d6b67.tar.gz` | sha256 与 `.hash` 一致 |
+| liquid-dsp | `ext-liquid-dsp/ext-liquid-dsp-1.6.0.tar.gz` | `.hash` 无 hash 行，不校验 |
+| libcyaml | `libcyaml/libcyaml-1.4.2.tar.gz` | 原有缓存，sha256 与 `.hash` 一致 |
+
+缓存目录按包名取子目录（U-Boot 是 `dl/uboot/`，不是 `dl/` 根目录）；任意包
+可用 `make printvars VARS='<包名大写>_SOURCE <包名大写>_DL_DIR'` 查期望的文件名
+与路径。
+
+**两个例外**：`libspecbleach-ca90a65.tar.gz` 从 codeload 取到的归档 sha256 为
+`41a628ba...`，与 `br2_external/package/libspecbleach/libspecbleach.hash` 的
+`b95cb3a6...` 不一致，`sources.buildroot.net` 也不收录这个自定义包；因此**没有**
+启用它，只在 `dl/libspecbleach/.prefetched-codeload.tar.gz` 留了备用包。若编译到
+该包报下载失败或 hash 错误，需二选一：换成与项目 hash 对应的归档，或确认源码
+无误后把 `.hash` 的 sha256 改成 `41a628ba...` 并把备用包改名为
+`libspecbleach-ca90a65.tar.gz`（Buildroot 会检查 hash 文件里的每一行，不能靠追加
+第二行绕过）。`rhvoice` 用 `SITE_METHOD = git`（git clone，非归档），无法这样预缓存，
+按实际日志处理。
+
+> 进度（2026-11-10 03:20）：`glibc 2.38` 已完成，正在
+> `host-gcc-final 12.3.0 Building`，日志无新报错；`images/` 仍为空，`sdcard.img`
+> 要等全编译结束才出现。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
