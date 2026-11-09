@@ -291,10 +291,46 @@ IPv6 地址等超时，很慢）。同样从 `sources.buildroot.net/intltool/` �
 "Will not generate HTML version of man pages" 警告，这只是 HTML man 页支持探测
 失败，随后正常生成 Makefile，不用处理。
 
-> 进度（2026-11-10 05:35）：编译约 2 小时 22 分、日志约 54 MB、1197 个 `>>>`
-> 阶段，`target/` 413 MB；`host-genimage` / `host-mtools` / `linux-firmware` /
-> `nano` / `host-intltool` 已过，正在 `host-libxml2 Building`。续编日志无新的
-> 致命错误。`sdcard.img` 仍未生成，要等内核、U-Boot、GUI 和 genimage 完成。
+### U-Boot SPL 构建失败（uutils dd 与 conv=block）
+
+`uboot custom Building` 在生成 `spl/u-boot-spl-align.bin` 时报
+`make[3]: *** [scripts/Makefile.spl:249：...] 错误 1`，日志里**没有任何错误文本**——
+因为 U-Boot 2023.1 的规则是：
+
+```make
+	@dd if=$< of=$@ conv=block,sync bs=4 2>/dev/null;
+```
+
+`2>/dev/null` 把诊断吞掉了。本机 `dd` 是 `dd (uutils coreutils) 0.2.2`
+（Ubuntu 25.10 的 Rust 版 coreutils），它要求 `conv=block` 必须配 `cbs=N`：
+`dd: conv=block or conv=unblock specified without cbs=N`；GNU dd 允许省略
+`cbs`。这是与 GCC 15/C23 同类的「新宿主工具 / 老项目」兼容问题，与 GUI 代码无关。
+
+GNU dd 在 `cbs` 未设置时 `conv=block` 本来就是空操作，所以去掉它字节等价：
+`conv=sync bs=4` 仍保证 4 字节对齐，实测生成 129168 字节文件与
+`u-boot-spl.bin` 逐字节相同（`cmp` 通过）。
+
+**长期修复（已进仓库）**：新增
+`br2_external/board/brass/uboot/0001-spl-align-dd-uutils.patch`，并在
+`brass7020_defconfig` / `brass7010_defconfig` 里加
+`BR2_TARGET_UBOOT_PATCH="$(BR2_EXTERNAL_BRASS_PATH)/board/brass/uboot/"`
+（与已有的 `BR2_LINUX_KERNEL_PATCH` 同一机制）。`patch --dry-run -p1` 已验证，
+以后重新跑 `config_brass.sh` 全新编译时会自动应用。
+
+**当前这次编译**：`output_brass/.config` 保持不变（仍是
+`BR2_TARGET_UBOOT_PATCH=""`；改它反而会触发重新配置 / 重新打补丁），所以已直接在
+`output_brass/build/uboot-custom/scripts/Makefile.spl` 做同样的替换，并预先生成
+了 `spl/u-boot-spl-align.bin`。在 SSH 终端续编即可，不需要清目录：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass
+make -j2 2>&1 | tee -a /tmp/brass-build.log
+```
+
+> 进度（2026-11-10 06:00）：编译在 `uboot custom Building` 的 SPL 对齐步骤停止，
+> `make` 已退出，需要上面这条续编命令。此前约 2 小时 45 分、日志约 62 MB，
+> `host-gnutls` / `host-libopenssl` / `host-openssl` 等已过。`images/` 里只有
+> `linux-firmware` 的蓝牙固件，`sdcard.img` 仍未生成。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
