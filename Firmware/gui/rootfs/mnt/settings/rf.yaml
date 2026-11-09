@@ -1,0 +1,110 @@
+mode: two_tone
+
+pa_bias:
+- 128
+- 128
+
+two_tone:
+- 700
+- 1900
+
+rx_band:
+- {to: 1500000, bpf: 0}
+- {to: 2300000, bpf: 1}
+- {to: 4200000, bpf: 2}
+- {to: 8500000, bpf: 3}
+- {to: 15500000, bpf: 4}
+- {to: 22000000, bpf: 5}
+- {to: 32000000, bpf: 6}
+- {to: 62000000, bpf: 7}
+
+tx_band:
+- {to: 2000000, lpf: 0, vref: 900}
+- {to: 4000000, lpf: 1, vref: 900}
+- {to: 8000000, lpf: 2, vref: 900}
+- {to: 11000000, lpf: 2, vref: 900}
+- {to: 15000000, lpf: 3, vref: 900}
+- {to: 19000000, lpf: 3, vref: 900}
+- {to: 22000000, lpf: 4, vref: 900}
+- {to: 25000000, lpf: 5, vref: 900}
+- {to: 30000000, lpf: 5, vref: 900}
+- {to: 62000000, lpf: 6, vref: 900}
+
+xvrt:
+- {start: 144000000, stop: 145000000, shift: 116500000, corr: -2000}
+- {start: 145000000, stop: 146000000, shift: 117500000, corr: -2000}
+- {start: 430000000, stop: 431000000, shift: 402500000, corr: -8000}
+- {start: 431000000, stop: 432000000, shift: 403500000, corr: -8000}
+- {start: 432000000, stop: 433000000, shift: 404500000, corr: -8000}
+- {start: 433000000, stop: 434000000, shift: 405500000, corr: -8000}
+- {start: 434000000, stop: 435000000, shift: 406500000, corr: -8000}
+- {start: 435000000, stop: 436000000, shift: 407500000, corr: -8000}
+- {start: 436000000, stop: 437000000, shift: 408500000, corr: -8000}
+- {start: 437000000, stop: 438000000, shift: 409500000, corr: -8000}
+- {start: 438000000, stop: 439000000, shift: 410500000, corr: -8000}
+- {start: 439000000, stop: 440000000, shift: 411500000, corr: -8000}
+
+txo_offset: 0
+ref_pwr: 10.0
+pwr: 10.0
+ant: 1
+atu: false
+
+swr:
+  fwd_offset: -1
+  rev_offset: -1
+  calibrate:
+  - {adc: 2, vpp: 2.6}
+  - {adc: 3, vpp: 2.8}
+  - {adc: 4, vpp: 3.2}
+  - {adc: 6, vpp: 3.6}
+  - {adc: 7, vpp: 3.7}
+  - {adc: 8, vpp: 3.9}
+  - {adc: 9, vpp: 4}
+  - {adc: 10, vpp: 4.2}
+  - {adc: 12, vpp: 4.3}
+  - {adc: 15, vpp: 4.5}
+  - {adc: 22, vpp: 4.8}
+  - {adc: 38, vpp: 5.8}
+  - {adc: 54, vpp: 6.5}
+  - {adc: 69, vpp: 7.2}
+  - {adc: 84, vpp: 7.8}
+  - {adc: 97, vpp: 8.4}
+  - {adc: 110, vpp: 8.8}
+  - {adc: 121, vpp: 9.3}
+  - {adc: 131, vpp: 9.7}
+  - {adc: 222, vpp: 14}
+  - {adc: 288, vpp: 16.4}
+  - {adc: 344, vpp: 18.4}
+  - {adc: 393, vpp: 20}
+  - {adc: 440, vpp: 21.6}
+  - {adc: 483, vpp: 23.2}
+  - {adc: 525, vpp: 24.8}
+  - {adc: 559, vpp: 25.6}
+  - {adc: 593, vpp: 27.2}
+  - {adc: 625, vpp: 28.4}
+  - {adc: 657, vpp: 29.6}
+  - {adc: 685, vpp: 30.4}
+  - {adc: 715, vpp: 31.2}
+  - {adc: 737, vpp: 32.4}
+  - {adc: 770, vpp: 33.4}
+  - {adc: 795, vpp: 34}
+  - {adc: 823, vpp: 34.4}
+  - {adc: 845, vpp: 36}
+  - {adc: 869, vpp: 36.8}
+  - {adc: 977, vpp: 40}
+  - {adc: 1072, vpp: 44}
+  - {adc: 1149, vpp: 46.4}
+  - {adc: 1213, vpp: 48.4}
+  - {adc: 1268, vpp: 50.4}
+  - {adc: 1317, vpp: 52.8}
+  - {adc: 1361, vpp: 53.6}
+  - {adc: 1400, vpp: 55.8}
+  - {adc: 1435, vpp: 56.8}
+  - {adc: 1469, vpp: 57.6}
+  - {adc: 1500, vpp: 59.2}
+  - {adc: 1529, vpp: 60}
+  - {adc: 1553, vpp: 60.4}
+  - {adc: 1576, vpp: 61.2}
+  - {adc: 1602, vpp: 62.8}
+  - {adc: 1624, vpp: 63.2}

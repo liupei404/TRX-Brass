@@ -1,0 +1,59 @@
+lsb:
+  filter: {low: 100, high: 2900, transition: 100}
+  agc: Med
+  freq_step: 500
+  spectrum_factor: 1
+  is_used: true
+usb:
+  filter: {low: 100, high: 2900, transition: 100}
+  agc: Med
+  freq_step: 500
+  spectrum_factor: 1
+  is_used: true
+cw:
+  filter: {low: 400, high: 800, transition: 100}
+  agc: Med
+  freq_step: 100
+  spectrum_factor: 3
+  is_used: true
+cwr:
+  filter: {low: 400, high: 800, transition: 100}
+  agc: Med
+  freq_step: 100
+  spectrum_factor: 3
+  is_used: true
+am:
+  filter: {low: 100, high: 2900, transition: 100}
+  agc: Med
+  freq_step: 500
+  spectrum_factor: 1
+  is_used: true
+nfm:
+  filter: {low: 100, high: 2900, transition: 100}
+  agc: Med
+  freq_step: 500
+  spectrum_factor: 1
+  is_used: true
+rtty:
+  filter: {low: 10, high: 3200, transition: 50}
+  agc: Med
+  freq_step: 100
+  spectrum_factor: 1
+  is_used: true
+olivia:
+  filter: {low: 350, high: 1600, transition: 50}
+  agc: Med
+  freq_step: 10
+  spectrum_factor: 8
+  is_used: true
+dmr:
+  filter: {low: 0, high: 3000, transition: 100}
+  agc: Off
+  freq_step: 12500
+  spectrum_factor: 1
+  is_used: true
+  source_id: 0
+  target_id: 9
+  color_code: 1
+  private_call: false
+  monitor: false

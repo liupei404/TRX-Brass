@@ -4,10 +4,11 @@
 #
 ################################################################################
 
-BRASS_GUI_VERSION = 42bafc864885eef05156ea8cdd1dc5c32efb338d
-BRASS_GUI_SITE = https://github.com/strijar/brass_gui
-BRASS_GUI_SITE_METHOD = git
-BRASS_GUI_GIT_SUBMODULES = YES
+# GUI 源码已作为普通目录并入本仓库（Firmware/gui）。
+# 直接使用本地源码构建，避免从上游拉取时忽略本仓库中的开关机等修改。
+BRASS_GUI_VERSION = local
+BRASS_GUI_SITE = $(BR2_EXTERNAL_BRASS_PATH)/../../gui
+BRASS_GUI_SITE_METHOD = local
 BRASS_GUI_LICENSE = GPLv2
 
 BRASS_GUI_INSTALL_STAGING = YES
