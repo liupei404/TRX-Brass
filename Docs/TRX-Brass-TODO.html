@@ -449,6 +449,25 @@
   <div class="note"><b>本轮未处理（需你决策或需目标环境）</b>：S01 默认 root 口令 / SSH 策略、F01 背光与 GPS 是否接线、F03/F04 记忆与 ATU/CW 键控、F05 散落 FIXME、N01 Buildroot 依赖实机验证、N05 lv_drivers 归属、N06 新增 vendored 许可证、H01-H03 硬件改板、D04-D08 其余文档、B02/B04/B05 构建重构、C05 测试体系、S03 镜像精简、R02 发布检查清单。</div>
 </section>
 
+<section>
+  <h2>十、7020 全新编译与文档同步（2026-11-10） <small>Full build</small></h2>
+  <div class="note">本节记录按当前仓库文件重新配置并全编译 7020 镜像的准备工作；清单条目状态未变，统计不变。</div>
+  <table>
+    <thead><tr><th class="col-when">条目</th><th class="col-what">内容</th><th class="col-ev">说明</th></tr></thead>
+    <tbody>
+      <tr><td class="commit">D01 · D03</td>
+        <td><code>BUILDING.md</code> 新增第 1.1 节：全新编译命令、产物路径、下载与烧录、7020 bitstream、功能边界；<code>README.md</code> 同步指路。</td>
+        <td class="ev">与本次实际构建流程保持一致，文档在编译前先写好。</td></tr>
+      <tr><td class="commit">N01（进展）</td>
+        <td>实测 Buildroot 2024.02 的 <code>brass-gui</code> 以 <code>SITE_METHOD = local</code> 取用仓库内 GUI 源码（rsync 197 MB 到 <code>output_brass/build/brass-gui-local</code>）；<code>syncconfig</code>、外部包下载与 sha256 校验通过。</td>
+        <td class="ev">N01 仍保持「新增」：完整依赖链需等本次全编译日志确认，不预先改成已修复。</td></tr>
+      <tr><td class="commit">bitstream</td>
+        <td>确认 <code>board/brass/7020/system.bit</code> 为真实 Xilinx .bit（2.5 MB，Vivado 2019.2），由 <code>post-build.sh</code> 复制进 <code>images/</code>、由 <code>genimage.cfg</code> 打进 boot 分区。</td>
+        <td class="ev">本机无需 Vivado；长按开机仍需电源锁存 / FPGA 硬件，不属于软件编译范围。</td></tr>
+    </tbody>
+  </table>
+</section>
+
 <footer>
   <p><b>优先级</b> P0：影响可用性/安全或会导致构建失败 · P1：影响协作与可维护性 · P2：长期质量与体验。</p>
   <p><b>状态口径</b> "已修复/部分修复"指原作者上游提交相对于旧清单的改善；已修复项保留在清单中用于追溯，不再需要动手。"新增"指本版本引入、旧版不存在的问题。</p>

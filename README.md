@@ -416,3 +416,14 @@ Made with ❤️ by amateur radio community
 
 本仓库基于 Belousov Oleg (R1CBU) 的原项目
 `https://github.com/strijar/TRX-Brass`。
+
+## 全新编译与固件下载（7020）
+
+默认目标为 7020。按当前仓库文件重新配置并全新编译、产物路径、`sdcard.img`
+下载与烧录方法、bitstream 说明，见 [BUILDING.md](BUILDING.md) 第 1.1 节。
+
+- 仓库已带 7020 的真实 `system.bit`
+  （`Firmware/system/br2_external/board/brass/7020/system.bit`），编译镜像时
+  自动打进 boot 分区，无需 Vivado 生成比特流。
+- 长按关机（1000 ms）会随 `brass-gui` 编进 rootfs；长按开机 / 电源自锁仍需
+  电源锁存电路或 FPGA 硬件，不是软件编译能实现的。

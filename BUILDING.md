@@ -15,20 +15,26 @@ checkout.
 
 - Host tools: `make`, `wget`, CMake >= 3.23, a C/C++ compiler for host-side
   tests, and `mb-gcc` (Xilinx MicroBlaze toolchain) for the FFT firmware.
-- The first Buildroot run downloads `buildroot-2024.02.tar.gz`, so network
-  access is required once.
+- `Firmware/system/buildroot-2024.02.tar.gz` is already in the repository, so
+  Buildroot itself is not downloaded. Network access is still needed once for
+  the package sources and the ~190 MB Xilinx Linux tarball.
+- Section 1.1 is the verified full 7020 rebuild procedure and tells you where
+  to pick up the finished image.
 
 ## 1. System image (Buildroot)
 
 ```
 cd Firmware/system
-./config_brass.sh          # downloads Buildroot if needed, applies brass7020_defconfig
-make
+./config_brass.sh          # regenerates output_brass/.config from brass7020_defconfig
+cd output_brass
+make -j2                   # -j4 may OOM on an 8 GiB host
 ```
 
 `config_brass.sh` uses `BR2_EXTERNAL=../br2_external` and
-`O=../output_brass`. For the Zynq 7010 variant, replace the defconfig with
-`brass7010_defconfig`.
+`O=../output_brass`; it overwrites `.config`, so do not keep custom edits
+there. For the Zynq 7010 variant, replace the defconfig with
+`brass7010_defconfig`. For a clean rebuild from the current files, run
+`make clean` first (it keeps `.config` and the `dl/` cache). See section 1.1.
 
 Outputs:
 
@@ -40,6 +46,105 @@ Outputs:
 
 Flash `sdcard.img` to an SD card, then boot. U-Boot loads `system.bit` before
 the kernel; the GUI is started by `/etc/init.d/S99gui`.
+
+## 1.1 7020 全新编译与固件下载（2026-11-10）
+
+以**当前仓库文件**为准，忽略此前遗留的 `.config` 与 `output_brass` 构建产物，
+从 defconfig 重新配置后全新编译。默认目标就是 **7020**。
+
+### 前置条件（本机已实测）
+
+- 用仓库自带的 `Firmware/system/buildroot-2024.02/`（Buildroot 2024.02）。
+  `/home/bh8cgj/buildroot/` 是 2026.05 开发版且为 i686 配置，与本项目不匹配，
+  **不要**拿它编译这个项目。
+- LVGL 子模块已检出：`Firmware/gui/lvgl`（182 MB）。若是空目录，先执行
+  `git submodule update --init --recursive`。
+- 网络：约 445 个包的源码需下载一次；其中 Xilinx `linux-xlnx` 6.1 内核 tarball
+  约 190 MB，实测约 400 KB/s，需 8–12 分钟。`sources.buildroot.net` 备份镜像可用。
+- 主机工具齐备（`make`/`gcc`/`g++`/`git`/`wget`/`bison`/`flex`/`perl`/`rsync`/
+  `cpio`/`python3`）；`host-cmake` 由 Buildroot 提供 3.28.1，满足 LVGL 9.5。
+- 本机 4 核 / 7.1 GiB 内存 / 416 GiB 空闲磁盘。用 `-j2`，不要让它按默认
+  `BR2_JLEVEL=0` 自动开 4 个并行任务，容易内存不足。
+
+### 编译命令
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system
+./config_brass.sh                 # 重新生成 output_brass/.config（brass7020_defconfig）
+cd output_brass
+make clean                         # 清掉旧 build/host/target/images，保留 .config 与 dl 缓存
+nohup make -j2 </dev/null > /tmp/brass-build.log 2>&1 &
+tail -f /tmp/brass-build.log
+```
+
+`config_brass.sh` 会覆盖旧的 `output_brass/.config`，所以「以前改过的配置」一律
+不保留。`make clean` 只删构建产物，下载的源码缓存 `Firmware/system/buildroot-2024.02/dl/`
+会留着，可以省去重复下载。首次全编译（glibc 工具链 + Python3 + Linux 内核 + GUI）
+预计 2–5 小时；编译日志在 `/tmp/brass-build.log`，结果以日志为准。
+
+### 新固件在哪里找
+
+编译完成后，全部产物在：
+
+```
+/home/bh8cgj/TRX-Brass/Firmware/system/output_brass/images/
+├── sdcard.img        整卡镜像（boot / rootfs / data 三个分区，直接烧录用这个）
+├── boot.bin  u-boot.img  brass.dtb  uImage  system.bit  uboot-env.bin
+├── boot.vfat  rootfs.ext4  data.vfat
+└── settings/         DATA 分区的初始配置
+```
+
+还有交叉工具链与目标 sysroot 在 `Firmware/system/output_brass/host/`。
+
+### 下载与烧录测试
+
+```bash
+# 方式一：从这台机器直接取
+scp bh8cgj@<本机IP>:/home/bh8cgj/TRX-Brass/Firmware/system/output_brass/images/sdcard.img .
+
+# 方式二：在产物目录起临时下载服务，浏览器打开 http://<本机IP>:8000/
+cd /home/bh8cgj/TRX-Brass/Firmware/system/output_brass/images
+python3 -m http.server 8000
+
+# 烧录（务必确认 /dev/sdX 是 SD 卡，别写到系统盘）
+sudo dd if=sdcard.img of=/dev/sdX bs=4M status=progress conv=fsync
+```
+
+Windows 下可用 balenaEtcher / Win32DiskImager 直接选 `sdcard.img`。
+串口调试口 `ttyPS0,115200`，默认 root 口令 `123`。
+
+### 7020 与 bitstream
+
+- 默认 defconfig 即 `brass7020_defconfig`；7010 才需要换成 `brass7010_defconfig`。
+  两者只差设备树、`uboot.config` 路径和 `BR2_ROOTFS_POST_SCRIPT_ARGS`。
+- **仓库已经带 7020 的真实比特流**：
+  `Firmware/system/br2_external/board/brass/7020/system.bit`（2.5 MB，
+  Xilinx `.bit`，Vivado 2019.2，`system_wrapper`）。`board/brass/post-build.sh`
+  会按 `7020` 参数把它复制成 `images/system.bit`，`genimage.cfg` 再打进 boot 分区。
+  **不需要本机装 Vivado，也不需要自己生成 bitstream**；要用自己的新比特流，
+  替换这个 `7020/system.bit` 后重新 `make` 即可。
+- MicroBlaze 的 `mb.code` / `mb.data` 已在
+  `Firmware/gui/rootfs/usr/share/brass/fw/`，本机缺 `mb-gcc` 不影响出镜像，
+  只是不能从 `Firmware/microblase/` 源码重编它们。
+
+### 修改过的功能能编进固件吗
+
+能，长按关机属于 GUI / rootfs 层：`Firmware/gui/src/power.c`、`power.h`、
+`main_screen.c`、`keypad.c`、`main.c`，且 `src/CMakeLists.txt` 已把 `power.c`
+加入 `target_sources`。`brass-gui.mk` 用 `SITE_METHOD = local` 直接构建仓库内
+`Firmware/gui`（已实测 Buildroot 把 197 MB 源码 rsync 进
+`output_brass/build/brass-gui-local`），所以该修改会随 `brass-gui` 包一起编进
+rootfs 和 `sdcard.img`。
+
+- 短按：切换背光（行为不变）。
+- 长按 1000 ms：保存 bands / modes / options / rf、`sync()`，再
+  `reboot(RB_POWER_OFF)`；内核无关机驱动时按有序退出处理，`brass_daemon` 不会重启。
+- **长按开机 / 电源自锁不是软件能编出来的**：CPU 断电期间没有任何软件运行，
+  必须由电源锁存电路或 FPGA 完成。GUI 只在启动时读取按键状态作诊断，
+  默认不会自行断电。
+
+完整编译是否一次通过，以 `/tmp/brass-build.log` 为准；若 `brass-gui` 阶段报
+依赖或 CMake 错误，按日志修正后重新 `make -j2` 即可（增量续编）。
 
 ## 2. GUI, standalone cross build (for debugging)
 
