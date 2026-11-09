@@ -172,6 +172,29 @@ Building → Installing），接着 `host-mpfr 4.1.1` 也正常进入 Building�
 前三处对本地构建目录的源码/生成文件修改仍保留着，但**以后重新全新编译不再需要**
 （统一参数已覆盖）；`buildroot-2024.02/` 本身未改动。
 
+### 内核源码下载失败（网络波动）
+
+`brass7020_defconfig` 通过
+`$(call github,Xilinx,linux-xlnx,xlnx_rebase_v6.1_LTS_2023.1)/xlnx_rebase_v6.1_LTS_2023.1.tar.gz`
+下载约 212 MB 的 Xilinx Linux 6.1 源码。2026-11-10 在 `linux-headers custom Downloading`
+阶段，`github.com` 连续三次报 `The TLS connection was non-properly terminated.`，
+回退到 `sources.buildroot.net` 又返回 404（备份镜像不收录这个自定义内核包）。
+
+处理办法：把源码包预先放进 Buildroot 下载缓存，之后 `make` 直接跳过下载：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system/buildroot-2024.02/dl/linux
+wget -4 --tries=20 --timeout=60 --read-timeout=120 \
+  -O xlnx_rebase_v6.1_LTS_2023.1.tar.gz \
+  'https://codeload.github.com/Xilinx/linux-xlnx/tar.gz/refs/tags/xlnx_rebase_v6.1_LTS_2023.1'
+gzip -t xlnx_rebase_v6.1_LTS_2023.1.tar.gz    # 必须校验，避免半截包
+```
+
+`LINUX_HEADERS_DL_SUBDIR = linux`，所以缓存文件必须放在 `dl/linux/` 下且文件名保持
+`xlnx_rebase_v6.1_LTS_2023.1.tar.gz`（该包不校验 hash）。本次已下载并校验完成
+（212 MB，`gzip -t` 通过、tar 可读），续编 `make` 会跳过这段下载；`dl/` 缓存即使在
+`make clean` 后也保留。
+
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
 **第一次必须全编译一次**（2–5 小时）。`sdcard.img` 不是「一个 GUI 程序」，而是整张

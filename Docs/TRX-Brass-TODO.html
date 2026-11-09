@@ -470,6 +470,9 @@
       <tr><td class="commit">GCC 15 兼容</td>
         <td>独立 SSH 会话随后在 <code>host-m4 1.4.19 Building</code> 因 gnulib <code>[[__nodiscard__]]</code>（GCC 15 默认 C23）失败；已将本地构建目录 <code>lib/config.h</code> 中的 <code>_GL_ATTRIBUTE_NODISCARD</code> 置空，并在 <code>BUILDING.md</code> 1.1 节写明续编命令。</td>
         <td class="ev">与 IDE shim 无关；另有 <code>host-gawk 5.3.0</code> 函数指针强转、<code>host-gmp 6.3.0</code> configure（C23 下 <code>void g()</code>）报错。第四处后改为在 <code>br2_external/external.mk</code> 给所有 host 包统一加 <code>-std=gnu17</code> 等参数，<b>不更换 gcc 版本</b>，后续同类错误由该设置挡掉，重新全新编译也不再需要前三处本地修改。</td></tr>
+      <tr><td class="commit">内核源码下载</td>
+        <td><code>linux-headers custom Downloading</code> 因 github.com 三次 <code>TLS connection was non-properly terminated</code> 且 <code>sources.buildroot.net</code> 无此自定义包（404）而失败；已用 codeload 预下载 212 MB 内核 tarball 到 <code>buildroot-2024.02/dl/linux/</code> 并 <code>gzip -t</code> 校验。</td>
+        <td class="ev">属网络波动、非代码问题；<code>LINUX_HEADERS_DL_SUBDIR = linux</code>，文件名固定，续编 <code>make</code> 会跳过下载。步骤见 <code>BUILDING.md</code> 1.1 节。</td></tr>
       <tr><td class="commit">增量打包 GUI</td>
         <td><code>sdcard.img</code> 是整卡快照（U-Boot / 内核 / bitstream / 数百个库 / rootfs），首次必须全编译；全编译后只改 GUI 时执行 <code>make brass-gui-dirclean</code> 再 <code>make -j2</code> 即可几分钟内重出镜像，或单独交叉编译 <code>brass_gui</code> 后 scp 覆盖板子上 <code>/usr/sbin/brass_gui</code>。</td>
         <td class="ev">已写入 <code>BUILDING.md</code> 1.1 节；第二次 GCC 15 报错在 <code>host-e2fsprogs</code> 的 <code>tdb.c</code>（C23 下 bool 为关键字），已用条件编译修复。</td></tr>
