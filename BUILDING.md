@@ -145,10 +145,13 @@ make -j2 2>&1 | tee -a /tmp/brass-build.log
 完成后再执行一次上面的 `sed`。2026-11-10 本次已对当前输出目录执行过该修复。
 
 续编时又在 `host-e2fsprogs 1.47.0` 遇到同类问题：`lib/ext2fs/tdb.c:113` 的
-`typedef int bool;` 在 C23 下 `bool` 已是关键字。已把该处改成仅当
-`__STDC_VERSION__ < 202311L` 时才 typedef（同样是本地构建目录改动，不进 git）。
-两处都是 GCC 15 默认 C23 与 Buildroot 2024.02 老包的兼容问题，不是 GUI 代码问题；
-后续若还有同类报错，按日志定位、加条件编译即可。想一次避开，可安装 gcc-14
+`typedef int bool;` 在 C23 下 `bool` 已是关键字，已改成仅当
+`__STDC_VERSION__ < 202311L` 时才 typedef。再往后 `host-gawk 5.3.0` 的
+`io.c:3389` 因 GCC 15 把 `incompatible-pointer-types` 升级为 error 而失败，
+已去掉 `( ssize_t(*)() ) read` 的旧式强转（3389、4449 两处直接赋 `read`，
+其签名与 `read_func` 一致）。以上三处都是本地构建目录改动、不进 git，
+都是 GCC 15 与 Buildroot 2024.02 老包的兼容问题，不是 GUI 代码问题；
+后续若还有同类报错，按日志定位改对应源码即可。想一次避开，可安装 gcc-14
 （默认仍是 gnu17）后重新全编译（本方案本次未实测）：
 
 ```bash

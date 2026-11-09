@@ -469,7 +469,7 @@
         <td class="ev">独立会话 PATH 不含 IDE shim；实测 host-tar / host-zstd / host-ccache 通过，日志 SAFE_DELETE 为 0。产物未生成前 <code>images/</code> 为空。</td></tr>
       <tr><td class="commit">GCC 15 兼容</td>
         <td>独立 SSH 会话随后在 <code>host-m4 1.4.19 Building</code> 因 gnulib <code>[[__nodiscard__]]</code>（GCC 15 默认 C23）失败；已将本地构建目录 <code>lib/config.h</code> 中的 <code>_GL_ATTRIBUTE_NODISCARD</code> 置空，并在 <code>BUILDING.md</code> 1.1 节写明续编命令。</td>
-        <td class="ev">与 IDE shim 无关；续编是增量，不重跑 <code>config_brass.sh</code>；若日后重新全新编译需再做一次该修复。</td></tr>
+        <td class="ev">与 IDE shim 无关；续编是增量，不重跑 <code>config_brass.sh</code>；另有 <code>host-gawk 5.3.0</code> 的旧式函数指针强转报错，已去掉强转。三处均为本地构建目录改动，日后重新全新编译需再做一次。</td></tr>
       <tr><td class="commit">增量打包 GUI</td>
         <td><code>sdcard.img</code> 是整卡快照（U-Boot / 内核 / bitstream / 数百个库 / rootfs），首次必须全编译；全编译后只改 GUI 时执行 <code>make brass-gui-dirclean</code> 再 <code>make -j2</code> 即可几分钟内重出镜像，或单独交叉编译 <code>brass_gui</code> 后 scp 覆盖板子上 <code>/usr/sbin/brass_gui</code>。</td>
         <td class="ev">已写入 <code>BUILDING.md</code> 1.1 节；第二次 GCC 15 报错在 <code>host-e2fsprogs</code> 的 <code>tdb.c</code>（C23 下 bool 为关键字），已用条件编译修复。</td></tr>
