@@ -214,19 +214,24 @@ gzip -t xlnx_rebase_v6.1_LTS_2023.1.tar.gz    # 必须校验，避免半截包
 可用 `make printvars VARS='<包名大写>_SOURCE <包名大写>_DL_DIR'` 查期望的文件名
 与路径。
 
-**两个例外**：`libspecbleach-ca90a65.tar.gz` 从 codeload 取到的归档 sha256 为
-`41a628ba...`，与 `br2_external/package/libspecbleach/libspecbleach.hash` 的
-`b95cb3a6...` 不一致，`sources.buildroot.net` 也不收录这个自定义包；因此**没有**
-启用它，只在 `dl/libspecbleach/.prefetched-codeload.tar.gz` 留了备用包。若编译到
-该包报下载失败或 hash 错误，需二选一：换成与项目 hash 对应的归档，或确认源码
-无误后把 `.hash` 的 sha256 改成 `41a628ba...` 并把备用包改名为
-`libspecbleach-ca90a65.tar.gz`（Buildroot 会检查 hash 文件里的每一行，不能靠追加
-第二行绕过）。`rhvoice` 用 `SITE_METHOD = git`（git clone，非归档），无法这样预缓存，
-按实际日志处理。
+**`libspecbleach` 的 hash 需要更新**：codeload 取到的归档（88 个文件、顶层目录
+`libspecbleach-ca90a65/`、meson 构建齐全）sha256 为
+`41a628baf7713e2745cf68e4b81b39b4a96408674b00457d639753d188f895b4`，而
+`br2_external/package/libspecbleach/libspecbleach.hash` 里是过时的
+`b95cb3a6...`。已把 `.hash` 重算为新值，并把归档放进
+`dl/libspecbleach/libspecbleach-ca90a65.tar.gz`；两者一致，编译到该包会跳过下载
+并通过校验。注意 Buildroot 会检查 `.hash` 里的**每一行**，所以必须替换旧值，不能
+追加第二行 sha256。`sources.buildroot.net` 不收录这个自定义包，备份镜像也无效。
 
-> 进度（2026-11-10 03:20）：`glibc 2.38` 已完成，正在
-> `host-gcc-final 12.3.0 Building`，日志无新报错；`images/` 仍为空，`sdcard.img`
-> 要等全编译结束才出现。
+小包（`host-gettext-tiny`、`host-ninja`、`host-libffi` 等）即使 github.com 先报
+`TLS connection was non-properly terminated.`，重试时也会 302 到 codeload 并通过
+sha256 校验；只有 212 MB 内核这种大包会三次全断，才必须预缓存。`rhvoice` 用
+`SITE_METHOD = git`，实测 `git ls-remote` 正常，不受归档 TLS 问题影响。
+
+> 进度（2026-11-10 03:36）：工具链已完成，`glibc` / `dbus` / `expat` /
+> `alsa-lib` / `host-gettext` / `host-libffi` 等已通过，正在 `host-ninja Downloading`；
+> 续编日志无致命错误（`Error 1 (ignored)`、个别镜像 404/403 均非致命）。`images/`
+> 仍为空，`sdcard.img` 要等全编译结束才出现。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
