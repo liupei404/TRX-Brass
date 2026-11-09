@@ -90,11 +90,23 @@ tail -f /tmp/brass-build.log
 
 在 CodeBuddy / VS Code 的会话内直接启动 `make` 时，IDE 注入的删除保护
 （`safe-delete` shim 被放在 `PATH` 最前面）会连 autoconf / Buildroot 内部对
-临时文件的 `rm` 一起拦截，日志里出现大量 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`，
-可能造成后续步骤失败或临时文件堆积。完整编译建议在**系统终端**里执行上面同样的
-命令（其 `PATH` 不含 IDE 的 `safe-bin` shim），或先在会话内放行该保护；IDE 里
-仍可用 `tail -f /tmp/brass-build.log` 看进度。若已在 IDE 内启动了一个 `make`，
-换到终端前先 `kill <该 make 的 PID>`，避免两个 make 同时写同一个输出目录。
+临时文件的 `rm` 一起拦截，日志里出现大量 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`。
+
+2026-11-10 实测：IDE 内启动的全编译在 `host-tar 1.34 Configuring` 阶段因临时文件
+清不掉而失败（`mkdir: conftest.d2: File exists` →
+`configure: error: cannot create temporary files`），`images/` 为空，**没有生成任何固件**。
+所以完整编译必须在**独立的系统终端 / SSH 会话**里运行（其 `PATH` 不含 IDE 的
+`safe-bin` shim），不要在这个 IDE 的内置终端里跑。重跑前先清掉被污染的临时目录：
+
+```bash
+cd /home/bh8cgj/TRX-Brass/Firmware/system
+rm -rf output_brass/build/host-tar-1.34   # 在独立终端里执行；IDE 会话内删不掉
+cd output_brass
+make -j2 2>&1 | tee /tmp/brass-build.log
+```
+
+若 IDE 内还有一个 `make` 在跑，先 `kill <该 make 的 PID>`，避免两个 make 同时写
+同一个输出目录。IDE 里仍可用 `tail -f /tmp/brass-build.log` 看进度。
 
 ### 新固件在哪里找
 
