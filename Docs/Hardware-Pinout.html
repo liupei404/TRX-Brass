@@ -97,17 +97,17 @@
     <p>通道 1 共 21 位（<code>gpio-width=21</code>），逐位信号名来自设备树 <code>gpio-line-names</code>：</p>
     <table>
       <tr><th>位</th><th>信号名</th><th>功能</th><th>位</th><th>信号名</th><th>功能</th></tr>
-      <tr><td>0</td><td><code>user2</code></td><td>用户 LED/IO</td><td>11</td><td><code>adc_ofa</code></td><td>ADC 溢出标志</td></tr>
-      <tr><td>1</td><td><code>user3</code></td><td>用户 LED/IO</td><td>12</td><td><code>pwrbtn_on</code></td><td>电源键（按下开机）</td></tr>
-      <tr><td>2</td><td><code>user4</code></td><td>用户 LED/IO</td><td>13</td><td><code>ext_pin1</code></td><td>外部引脚</td></tr>
-      <tr><td>3</td><td><code>user5</code></td><td>用户 LED/IO</td><td>14</td><td><code>cw_dot</code></td><td>CW 点键</td></tr>
-      <tr><td>4</td><td><code>user6</code></td><td>用户 LED/IO</td><td>15</td><td><code>cw_dash</code></td><td>CW 划键</td></tr>
-      <tr><td>5</td><td><code>user8</code></td><td>用户 LED/IO</td><td>16</td><td><code>ptt_in</code></td><td>PTT 输入</td></tr>
-      <tr><td>6</td><td><code>enc1_a</code></td><td>编码器1 A 相</td><td>17</td><td><code>charge_pump</code></td><td>充电泵</td></tr>
-      <tr><td>7</td><td><code>enc1_b</code></td><td>编码器1 B 相</td><td>18</td><td><code>preamp_on</code></td><td>前置放大使能</td></tr>
-      <tr><td>8</td><td><code>enc2_a</code></td><td>编码器2 A 相</td><td>19</td><td><code>tx_out</code></td><td>TX 输出控制</td></tr>
-      <tr><td>9</td><td><code>enc2_b</code></td><td>编码器2 B 相</td><td>20</td><td><code>adc_dith</code></td><td>ADC 抖动</td></tr>
-      <tr><td>10</td><td><code>adc_pga</code></td><td>ADC PGA 控制</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>0</td><td><code>user2</code></td><td>用户 LED/IO</td><td>11</td><td><code>adc_pga</code></td><td>ADC PGA 控制</td></tr>
+      <tr><td>1</td><td><code>user3</code></td><td>用户 LED/IO</td><td>12</td><td><code>adc_ofa</code></td><td>ADC 溢出标志</td></tr>
+      <tr><td>2</td><td><code>user4</code></td><td>用户 LED/IO</td><td>13</td><td><code>pwrbtn_on</code></td><td>电源键（按下开机）</td></tr>
+      <tr><td>3</td><td><code>user5</code></td><td>用户 LED/IO</td><td>14</td><td><code>ext_pin1</code></td><td>外部引脚</td></tr>
+      <tr><td>4</td><td><code>user6</code></td><td>用户 LED/IO</td><td>15</td><td><code>cw_dot</code></td><td>CW 点键</td></tr>
+      <tr><td>5</td><td><code>user8</code></td><td>用户 LED/IO</td><td>16</td><td><code>cw_dash</code></td><td>CW 划键</td></tr>
+      <tr><td>6</td><td><code>enc1_a</code></td><td>编码器1 A 相</td><td>17</td><td><code>ptt_in</code></td><td>PTT 输入</td></tr>
+      <tr><td>7</td><td><code>enc1_b</code></td><td>编码器1 B 相</td><td>18</td><td><code>charge_pump</code></td><td>充电泵</td></tr>
+      <tr><td>8</td><td><code>enc2_a</code></td><td>编码器2 A 相</td><td>19</td><td><code>preamp_on</code></td><td>前置放大使能</td></tr>
+      <tr><td>9</td><td><code>enc2_b</code></td><td>编码器2 B 相</td><td>20</td><td><code>tx_out</code></td><td>TX 输出控制</td></tr>
+      <tr><td>10</td><td><code>adc_dith</code></td><td>ADC 抖动</td><td>—</td><td>—</td><td>—</td></tr>
     </table>
     <p class="note">通道 2 为 32 位（<code>gpio2-width=32</code>）扩展，未命名，用于板级预留。<br>
     内核映射：<code>enc1_a/b</code>=gpio 6/7，<code>enc2_a/b</code>=gpio 8/9，<code>ptt_in</code>=gpio 17，<code>pwrbtn_on</code>=gpio 13（见 §4）。</p>
