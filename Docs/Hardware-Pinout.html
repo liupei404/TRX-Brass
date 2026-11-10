@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRX Brass — 硬件引脚与信号映射</title>
+<style>
+  :root{--ink:#1b2430;--muted:#5c6b7a;--line:#dde4ec;--bg:#f4f6f9;--card:#fff;
+        --brand:#1f4e79;--ok:#2e7d52;--warn:#b8860b;--bad:#c0392b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.7 system-ui,-apple-system,"Segoe UI","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
+  header,section{background:var(--card);border:1px solid var(--line);border-radius:10px;
+                 box-shadow:0 1px 3px rgba(20,40,70,.06)}
+  header{padding:26px 30px;margin-bottom:20px}
+  h1{margin:0 0 6px;font-size:25px;color:var(--brand)}
+  .sub{color:var(--muted);margin:0 0 16px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;font-size:13px;color:var(--muted);
+        border-top:1px solid var(--line);padding-top:14px}
+  .meta b{color:var(--ink)}
+  section{margin:0 0 18px;overflow:hidden}
+  h2{margin:0;font-size:18px;color:var(--brand);padding:16px 22px;border-bottom:1px solid var(--line)}
+  .body{padding:16px 22px}
+  h3{font-size:15px;color:var(--ink);margin:18px 0 8px}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 4px}
+  th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}
+  th{background:#eef3f9;color:var(--brand);font-weight:600}
+  tr:nth-child(even) td{background:#fafcfe}
+  code{background:#eef3f9;padding:1px 5px;border-radius:4px;font-size:12.5px;
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .alert{border-left:4px solid var(--brand);background:#eef4fb;margin:14px 22px;padding:12px 16px;border-radius:6px}
+  .alert.warn{border-color:var(--warn);background:#fdf6e3}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .note{color:var(--muted);font-size:12.5px;margin:4px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>TRX Brass — 硬件引脚与信号映射</h1>
+  <p class="sub">Zynq-7020 收发机：逻辑引脚 / 信号名 / 总线与地址对照</p>
+  <div class="meta">
+    <span>平台：<b>Xilinx Zynq-7020 (xc7z020-clg400-1)</b></span>
+    <span>来源：<b>Firmware/system/br2_external/board/brass/linux/brass-common.dtsi</b></span>
+    <span>编译：<b>2026-11-10 首次全编译生成 uImage</b></span>
+    <span>文档：<b>Docs/Hardware-Pinout.html</b></span>
+  </div>
+</header>
+
+<div class="alert">
+  <b>数据来源与范围</b>：下表全部取自设备树 <code>brass-common.dtsi</code>（已编入内核 <code>uImage</code>），
+  代表<b>逻辑信号 → 内核 GPIO / 总线 / 地址</b>的映射，是最可靠的引脚对照。
+  <b>物理 PCB 引脚</b>（连接器焊盘、板对板座 J1/J2、LCD/SD/以太网/RP-SMA 的脚位、Zynq PS MIO 编号）
+  以原理图 <code>Hardware/MainUnit/Schematic-1.1.pdf</code> 与 <code>Hardware/RadioUnit/Schematic-2.0.pdf</code> 为准；
+  <b>PL 端 FPGA 物理引脚约束（.xdc）</b>未包含在仓库中（<code>system.bit</code> 为预编译镜像），需查阅上游 Vivado 工程。
+</div>
+
+<section>
+  <h2>1. Zynq PS 外设（处理器系统）</h2>
+  <div class="body">
+    <table>
+      <tr><th>功能</th><th>设备树节点 (alias)</th><th>状态</th><th>说明</th></tr>
+      <tr><td>调试串口</td><td><code>uart0</code> (serial0)</td><td>okay</td><td>115200n8，stdout；MIO 分配见原理图</td></tr>
+      <tr><td>以太网</td><td><code>gem0</code> (ethernet0)</td><td>okay</td><td>rgmii-id；复位 <code>gpio0 7</code>；MAC 46:28:FA:DA:2F:4B</td></tr>
+      <tr><td>I2C</td><td><code>i2c0</code></td><td>okay</td><td>100 kHz；挂 RTC/DAC/ADC/Codec/键盘/RF 扩展等（见 §5）</td></tr>
+      <tr><td>SD 卡 0</td><td><code>sdhci0</code> (mmc0)</td><td>okay</td><td>无 CD/WP（<code>has-cd=0</code>）</td></tr>
+      <tr><td>SD 卡 1</td><td><code>sdhci1</code> (mmc1)</td><td>okay</td><td>无 CD/WP</td></tr>
+      <tr><td>USB</td><td><code>usb0</code></td><td>okay</td><td>host 模式；复位 <code>gpio0 8</code>；ULPI PHY @0xe0002000</td></tr>
+      <tr><td>QSPI</td><td><code>qspi</code> (spi0)</td><td>disabled</td><td>4 线，默认禁用（启动从 SD 卡）</td></tr>
+      <tr><td>PS GPIO (EMIO)</td><td><code>gpio0</code></td><td>okay</td><td>EMIO 宽度 64；mask-low 0x5600（仅部分脚启用）；第 3 个编码器、以太网/USB 复位占用其中脚</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>2. PL AXI 地址映射（FPGA 侧外设）</h2>
+  <div class="body">
+    <table>
+      <tr><th>地址</th><th>节点 / 兼容</th><th>功能</th><th>中断</th></tr>
+      <tr><td><code>0x43000000</code></td><td><code>framebuffer</code> (r1cbu,vdmafb)</td><td>显示帧缓冲，800×480</td><td>—</td></tr>
+      <tr><td><code>0x43C00000</code></td><td><code>axi_i2s</code> (adi,axi-i2s)</td><td>音频 I2S 接口</td><td>DMA</td></tr>
+      <tr><td><code>0x43C10000</code></td><td><code>axi_fifo_mm_s</code> (xlnx,axi-fifo-mm-s)</td><td>ADC/DAC 数据流 FIFO</td><td>intc 31</td></tr>
+      <tr><td><code>0x41200000</code></td><td><code>axi_gpio</code> (xlnx,axi-gpio)</td><td>PL 通用 GPIO（21+32 位，见 §3）</td><td>intc 29</td></tr>
+      <tr><td><code>0x43C20000</code></td><td><code>trx_regs</code> (generic-uio)</td><td>收发控制寄存器（用户态 UIO）</td><td>—</td></tr>
+      <tr><td><code>0x43D00000</code></td><td><code>mb_ibram</code> (generic-uio)</td><td>MicroBlaze 指令 BRAM</td><td>—</td></tr>
+      <tr><td><code>0x43D10000</code></td><td><code>mb_dbram</code> (generic-uio)</td><td>MicroBlaze 数据 BRAM</td><td>—</td></tr>
+      <tr><td><code>0x43C30000</code></td><td><code>control_regs</code> (syscon)</td><td>注释掉，未启用</td><td>—</td></tr>
+    </table>
+    <p class="note">时钟：<code>axi_clk</code>=122.88 MHz，<code>i2s_clk</code>=12.288 MHz（fixed-clock）；PS <code>ps-clk</code>=33.333 MHz。</p>
+  </div>
+</section>
+
+<section>
+  <h2>3. AXI GPIO（PL 端，@0x41200000）</h2>
+  <div class="body">
+    <p>通道 1 共 21 位（<code>gpio-width=21</code>），逐位信号名来自设备树 <code>gpio-line-names</code>：</p>
+    <table>
+      <tr><th>位</th><th>信号名</th><th>功能</th><th>位</th><th>信号名</th><th>功能</th></tr>
+      <tr><td>0</td><td><code>user2</code></td><td>用户 LED/IO</td><td>11</td><td><code>adc_ofa</code></td><td>ADC 溢出标志</td></tr>
+      <tr><td>1</td><td><code>user3</code></td><td>用户 LED/IO</td><td>12</td><td><code>pwrbtn_on</code></td><td>电源键（按下开机）</td></tr>
+      <tr><td>2</td><td><code>user4</code></td><td>用户 LED/IO</td><td>13</td><td><code>ext_pin1</code></td><td>外部引脚</td></tr>
+      <tr><td>3</td><td><code>user5</code></td><td>用户 LED/IO</td><td>14</td><td><code>cw_dot</code></td><td>CW 点键</td></tr>
+      <tr><td>4</td><td><code>user6</code></td><td>用户 LED/IO</td><td>15</td><td><code>cw_dash</code></td><td>CW 划键</td></tr>
+      <tr><td>5</td><td><code>user8</code></td><td>用户 LED/IO</td><td>16</td><td><code>ptt_in</code></td><td>PTT 输入</td></tr>
+      <tr><td>6</td><td><code>enc1_a</code></td><td>编码器1 A 相</td><td>17</td><td><code>charge_pump</code></td><td>充电泵</td></tr>
+      <tr><td>7</td><td><code>enc1_b</code></td><td>编码器1 B 相</td><td>18</td><td><code>preamp_on</code></td><td>前置放大使能</td></tr>
+      <tr><td>8</td><td><code>enc2_a</code></td><td>编码器2 A 相</td><td>19</td><td><code>tx_out</code></td><td>TX 输出控制</td></tr>
+      <tr><td>9</td><td><code>enc2_b</code></td><td>编码器2 B 相</td><td>20</td><td><code>adc_dith</code></td><td>ADC 抖动</td></tr>
+      <tr><td>10</td><td><code>adc_pga</code></td><td>ADC PGA 控制</td><td>—</td><td>—</td><td>—</td></tr>
+    </table>
+    <p class="note">通道 2 为 32 位（<code>gpio2-width=32</code>）扩展，未命名，用于板级预留。<br>
+    内核映射：<code>enc1_a/b</code>=gpio 6/7，<code>enc2_a/b</code>=gpio 8/9，<code>ptt_in</code>=gpio 17，<code>pwrbtn_on</code>=gpio 13（见 §4）。</p>
+  </div>
+</section>
+
+<section>
+  <h2>4. 旋转编码器 / 按键 / PTT / 电源</h2>
+  <div class="body">
+    <table>
+      <tr><th>设备</th><th>兼容</th><th>GPIO</th><th>说明</th></tr>
+      <tr><td><code>rotary@0</code></td><td>rotary-encoder</td><td><code>axi_gpio 6,7</code></td><td>编码器1（enc1_a/b），gray 相对轴</td></tr>
+      <tr><td><code>rotary@1</code></td><td>rotary-encoder</td><td><code>axi_gpio 8,9</code></td><td>编码器2（enc2_a/b），gray 相对轴</td></tr>
+      <tr><td><code>rotary@2</code></td><td>rotary-encoder</td><td><code>gpio0 12,13</code></td><td>第 3 个编码器（PS EMIO），gray 相对轴</td></tr>
+      <tr><td><code>key-ptt</code></td><td>gpio-keys</td><td><code>axi_gpio 17</code></td><td>PTT，Linux 键码 KEY_CONNECT</td></tr>
+      <tr><td><code>key-power</code></td><td>gpio-keys</td><td><code>axi_gpio 13</code></td><td>电源键，Linux 键码 KEY_POWER（短按背光 / 长按关机见 CodeChanges）</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>5. I2C 总线设备（@i2c0，100 kHz）</h2>
+  <div class="body">
+    <table>
+      <tr><th>地址</th><th>芯片</th><th>兼容</th><th>功能</th></tr>
+      <tr><td><code>0x68</code></td><td>DS3231</td><td>maxim,ds3231</td><td>RTC 实时时钟</td></tr>
+      <tr><td><code>0x60</code></td><td>MCP4725</td><td>microchip,mcp4725</td><td>12 位 DAC（偏置/调谐）</td></tr>
+      <tr><td><code>0x49</code></td><td>ADS1015</td><td>ti,ads1015</td><td>4 通道 ADC（AIN0-3，reg 4-7）：SWR/功率等采样</td></tr>
+      <tr><td><code>0x1a</code></td><td>NAU8822</td><td>nau8822</td><td>音频编解码器（codec）</td></tr>
+      <tr><td><code>0x34</code></td><td>TCA8418</td><td>ti,tca8418</td><td>4×4 矩阵键盘 + IO 扩展，中断 <code>gpio0 10</code></td></tr>
+      <tr><td><code>0x20</code></td><td>PCF8575 #1</td><td>pcf8575</td><td>RF GPIO 扩展（滤波器/衰减），见 §6</td></tr>
+      <tr><td><code>0x21</code></td><td>PCF8575 #2</td><td>pcf8575</td><td>RF GPIO 扩展（PLL/继电器），见 §6</td></tr>
+      <tr><td><code>0x22</code></td><td>PCF8575 #3</td><td>pcf8575</td><td>RF GPIO 扩展（LPF/频段），见 §6</td></tr>
+      <tr><td><code>0x24</code></td><td>PCF8575 #4</td><td>pcf8575</td><td>RF GPIO 扩展（波段/PTT），见 §6</td></tr>
+      <tr><td><code>0x2d</code></td><td>AD5245 #A</td><td>ad5245</td><td>数字电位器（TX 偏置 A）</td></tr>
+      <tr><td><code>0x2c</code></td><td>AD5245 #B</td><td>ad5245</td><td>数字电位器（TX 偏置 B）</td></tr>
+      <tr><td><code>0x40</code></td><td>INA3221</td><td>ti,ina3221</td><td>电流/电压监测：通道0=12V，通道1=PA，通道2 禁用</td></tr>
+    </table>
+    <h3>键盘矩阵（TCA8418，4×4）</h3>
+    <p>键码映射：<code>KEY_1</code>…<code>KEY_6</code>、<code>KEY_A</code>…<code>KEY_D</code>、<code>KEY_F1</code>…<code>KEY_F6</code>、<code>BTN_NORTH</code>、<code>BTN_SOUTH</code>。</p>
+  </div>
+</section>
+
+<section>
+  <h2>6. RF GPIO 扩展（PCF8575 ×4，I2C）</h2>
+  <div class="body">
+  <div class="grid">
+    <div>
+      <h3>U1 — @0x20（滤波器/衰减）</h3>
+      <table>
+        <tr><th>#</th><th>信号</th><th>#</th><th>信号</th></tr>
+        <tr><td>0</td><td><code>bpf_lf</code></td><td>8</td><td><code>bpf_0_60</code></td></tr>
+        <tr><td>1</td><td><code>bpf_40</code></td><td>9</td><td><code>att_16</code></td></tr>
+        <tr><td>2</td><td><code>bpf_160</code></td><td>10</td><td><code>att_0.5</code></td></tr>
+        <tr><td>3</td><td><code>bpf_80</code></td><td>11</td><td><code>att_1</code></td></tr>
+        <tr><td>4</td><td><code>bpf_30_20</code></td><td>12</td><td><code>att_2</code></td></tr>
+        <tr><td>5</td><td><code>bpf_17_15</code></td><td>13</td><td><code>att_4</code></td></tr>
+        <tr><td>6</td><td><code>bpf_12_10</code></td><td>14</td><td><code>att_8</code></td></tr>
+        <tr><td>7</td><td><code>bpf_6</code></td><td>15</td><td><code>hf_lna</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>U2 — @0x21（PLL/继电器）</h3>
+      <table>
+        <tr><th>#</th><th>信号</th><th>#</th><th>信号</th></tr>
+        <tr><td>0</td><td><code>adf_clk</code></td><td>8</td><td><code>k34</code> (RELAY_VHF_UHF_RX_TX)</td></tr>
+        <tr><td>1</td><td><code>adf_data</code></td><td>9</td><td><code>k41</code> (XVRT_VHF/UHF_RX_TX)</td></tr>
+        <tr><td>2</td><td><code>adf_le</code></td><td>10</td><td><code>k42</code> (TX_430_TX)</td></tr>
+        <tr><td>3</td><td><code>k39</code> (VHF/UHF_RX_TX)</td><td>11</td><td><code>k23</code> (RELAY_HF_RX_TX)</td></tr>
+        <tr><td>4</td><td><code>k37</code> (XVRT_HF_VHF/UHF)</td><td>12</td><td><code>k22</code> (RELAY_HF_VHF/UHF)</td></tr>
+        <tr><td>5</td><td><code>k38</code> (XVRT_VHF/UHF)</td><td>13</td><td><code>k40</code> (SEL_VHF/UHF)</td></tr>
+        <tr><td>6</td><td><code>k32_k33</code> (RELAY_LPF_VHF/UHF)</td><td>14</td><td>（空）</td></tr>
+        <tr><td>7</td><td><code>k34</code></td><td>15</td><td><code>rx_144</code> / <code>rx_430</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>U3 — @0x22（LPF/频段）</h3>
+      <table>
+        <tr><th>#</th><th>信号</th><th>#</th><th>信号</th></tr>
+        <tr><td>0</td><td><code>hf_tx</code></td><td>8</td><td><code>lpf_6</code></td></tr>
+        <tr><td>1</td><td><code>lpf_160</code></td><td>9</td><td><code>l_07</code></td></tr>
+        <tr><td>2</td><td><code>lpf_80</code></td><td>10</td><td><code>l_06</code></td></tr>
+        <tr><td>3</td><td><code>lpf_40</code></td><td>11</td><td><code>l_05</code></td></tr>
+        <tr><td>4</td><td><code>lpf_20</code></td><td>12</td><td><code>l_04</code></td></tr>
+        <tr><td>5</td><td><code>lpf_15</code></td><td>13</td><td><code>l_03</code></td></tr>
+        <tr><td>6</td><td><code>lpf_10</code></td><td>14</td><td><code>l_02</code></td></tr>
+        <tr><td>7</td><td><code>lpf_6</code></td><td>15</td><td><code>l_01</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>U4 — @0x24（波段/PTT）</h3>
+      <table>
+        <tr><th>#</th><th>信号</th><th>#</th><th>信号</th></tr>
+        <tr><td>0</td><td><code>c_01</code></td><td>8</td><td><code>band_2</code></td></tr>
+        <tr><td>1</td><td><code>c_06</code></td><td>9</td><td><code>k24</code></td></tr>
+        <tr><td>2</td><td><code>c_05</code></td><td>10</td><td><code>c_02</code></td></tr>
+        <tr><td>3</td><td><code>c_04</code></td><td>11</td><td><code>c_03</code></td></tr>
+        <tr><td>4</td><td><code>band_3</code></td><td>12</td><td><code>c_07</code></td></tr>
+        <tr><td>5</td><td><code>band_1</code></td><td>13</td><td>（空）</td></tr>
+        <tr><td>6</td><td><code>band_0</code></td><td>14</td><td><code>ptt_ext</code></td></tr>
+        <tr><td>7</td><td><code>band_2</code></td><td>15</td><td>（空）</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="note">U2/U3/U4 的带括号名称为原理图网表标注（继电器/开关），对应射频前端路径切换；具体物理连接见 <code>Hardware/RadioUnit/Schematic-2.0.pdf</code>。</p>
+  </div>
+</section>
+
+<section>
+  <h2>7. 音频路由（simple-audio-card）</h2>
+  <div class="body">
+    <table>
+      <tr><th>板卡端点</th><th>编解码器端点</th><th>说明</th></tr>
+      <tr><td>Headphones</td><td>LHP / RHP</td><td>耳机输出</td></tr>
+      <tr><td>Speaker</td><td>LSPK / RSPK</td><td>扬声器</td></tr>
+      <tr><td>Line Out</td><td>AUXOUT1 / AUXOUT2</td><td>线路输出</td></tr>
+      <tr><td>Line In</td><td>LAUX / RAUX</td><td>线路输入</td></tr>
+      <tr><td>Mic In</td><td>LMICP / RMICP</td><td>麦克风输入</td></tr>
+    </table>
+    <p class="note">CPU DAI = <code>axi_i2s</code>，Codec DAI = <code>nau8822</code>；格式 I2S。</p>
+  </div>
+</section>
+
+<section>
+  <h2>8. 时钟汇总</h2>
+  <div class="body">
+    <table>
+      <tr><th>时钟</th><th>频率</th><th>来源</th></tr>
+      <tr><td><code>ps-clk</code></td><td>33.333 MHz</td><td>板载晶振（Zynq PS）</td></tr>
+      <tr><td><code>axi_clk</code></td><td>122.88 MHz</td><td>FPGA fixed-clock</td></tr>
+      <tr><td><code>i2s_clk</code></td><td>12.288 MHz</td><td>FPGA fixed-clock（音频）</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>9. 物理引脚与原理图指引</h2>
+  <div class="body">
+    <div class="alert warn">
+      <b>本页是逻辑映射</b>，不含物理焊盘脚位。需要以下物理信息时请查阅：
+      <ul style="margin:8px 0 0">
+        <li>主控单元原理图（含 Zynq MIO、连接器 J1/J2、LCD/SPI/SD/以太网）：<code>Hardware/MainUnit/Schematic-1.1.pdf</code></li>
+        <li>射频单元原理图（含 BPF/LPF/继电器、ADF 频率合成、NAU 音频、RP-SMA）：<code>Hardware/RadioUnit/Schematic-2.0.pdf</code></li>
+        <li>FPGA 物理引脚约束（.xdc）：<b>未入库</b>，在预编译 <code>system.bit</code> 对应的上游 Vivado 工程中</li>
+        <li>BOM：<code>Hardware/MainUnit/BOM-V1.1.csv</code> / <code>Hardware/RadioUnit/BOM-V2.xlsx</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
