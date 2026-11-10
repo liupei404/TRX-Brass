@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRX-Brass GUI 屏幕布局与物理按钮参考</title>
+<style>
+  body { font:14px/1.6 -apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif; color:#222; background:#f5f6f8; margin:0; padding:24px; }
+  h1 { font-size:24px; border-bottom:3px solid #2b6cb0; padding-bottom:8px; }
+  h2 { font-size:19px; margin-top:32px; border-left:5px solid #2b6cb0; padding-left:10px; }
+  h3 { font-size:15px; color:#2b6cb0; margin-top:20px; }
+  .section { background:#fff; border:1px solid #e2e6ea; border-radius:8px; padding:16px 20px; margin-top:14px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  code { background:#eef2f7; border:1px solid #dce3ec; border-radius:4px; padding:0 5px; font:12px/1.5 Consolas,Menlo,monospace; color:#b5364a; }
+  table { border-collapse:collapse; width:100%; margin-top:10px; font-size:13px; }
+  th,td { border:1px solid #d6dbe2; padding:7px 9px; text-align:left; vertical-align:top; }
+  th { background:#2b6cb0; color:#fff; }
+  tr:nth-child(even) td { background:#f7f9fc; }
+  .note { background:#fff8e6; border:1px solid #f0d98a; border-radius:6px; padding:10px 14px; margin-top:12px; color:#6b5300; }
+  .src { color:#888; font-size:12px; }
+  /* ---- 屏幕渲染 --- */
+  .screen { position:relative; width:800px; height:480px; background:#0a0e14; border:2px solid #555; margin:14px 0; }
+  .region { position:absolute; box-sizing:border-box; border:1px solid rgba(130,185,255,.55); background:rgba(38,60,92,.42); color:#d4e7ff; font:10px/1.25 Consolas,Menlo,monospace; padding:2px 4px; overflow:hidden; border-radius:2px; }
+  .region b { color:#7fd0ff; display:block; font-size:10px; }
+  .region.dim { background:rgba(60,60,60,.35); border-color:rgba(160,160,160,.4); color:#bbb; }
+  .btn6 { position:absolute; width:133px; height:59px; box-sizing:border-box; border:1px solid #6cf; background:rgba(30,90,150,.5); color:#dff; font:10px/1.2 Consolas,monospace; padding:3px; text-align:center; }
+  .legend { font-size:12px; color:#555; margin-top:6px; }
+</style>
+</head>
+<body>
+<h1>TRX-Brass GUI 参考：屏幕布局与物理按钮</h1>
+<p class="src">数据来源：<code>main_screen.c</code>、<code>gui/rootfs/usr/share/brass/python/*</code>（主屏由 Python 模块经 <code>python_main_screen_get()</code> 创建，坐标取自 <code>layout.py</code>）、<code>keypad.c</code>、<code>power.c</code>、<code>radio.c</code>、<code>hw/gpio.c</code>、设备树 <code>brass-common.dtsi</code>。屏幕分辨率 800×480（来自设备树 <code>framebuffer width/height</code>）。</p>
+
+<div class="section">
+  <h2>1. 主屏幕布局（按代码坐标还原）</h2>
+  <p>下图用 CSS 绝对定位按 <code>layout.py</code> 中的 <code>x/y/w/h</code> 还原主界面各区域（区域间有叠层，如解码面板覆盖在瀑布图上、消息层覆盖在中部）。</p>
+
+  <div class="screen">
+    <div class="region" style="left:0;top:0;width:800px;height:79px;"><b>Top 顶栏 (h79)</b> 信息 / 表 / 时钟</div>
+    <div class="region" style="left:20;top:7;width:194px;height:45px;"><b>Info</b> RX/TX · 模式 · AGC · PRE/ATT/ATU</div>
+    <div class="region" style="left:250;top:10;width:340px;height:40px;"><b>S 表 SMeter</b> -121..-33 (RX 显示)</div>
+    <div class="region dim" style="left:250;top:10;width:340px;height:40px;opacity:.25;"><b>Mic/Power 表</b> 默认隐藏，TX 时显示功率表</div>
+    <div class="region" style="left:629;top:17;width:153px;height:26px;"><b>Clock</b> HH:MM:SS · 电池</div>
+    <div class="region" style="left:0;top:59;width:800px;height:101px;"><b>Spectrum 频谱 (h101)</b> 400 点</div>
+    <div class="region" style="left:0;top:140;width:800px;height:82px;"><b>Frequency 频率 (h82)</b> 中:RX 频率 · 左/右:FFT 边界 kHz</div>
+    <div class="region" style="left:0;top:202;width:800px;height:221px;"><b>Waterfall 瀑布 (h221)</b> 2047 点 · BandInfo 频段名</div>
+    <div class="region dim" style="left:0;top:209;width:800px;height:210px;opacity:.4;"><b>Pannel 解码面板</b> 仅 RTTY/OLIVIA/CW 解码时显示</div>
+    <div class="region dim" style="left:86;top:65;width:616px;height:89px;opacity:.35;"><b>Msg</b> 状态消息覆盖层 (2s)</div>
+    <div class="region dim" style="left:185;top:132;width:430px;height:100px;opacity:.35;"><b>MsgTiny</b> 短提示 (1s)</div>
+    <div class="region" style="left:0;top:401;width:800px;height:79px;"><b>Buttons 软功能按钮区 (h79)</b> 6 个按钮，按模式分页</div>
+    <div class="btn6" style="left:0;top:421;">F1</div>
+    <div class="btn6" style="left:133px;top:421;">F2</div>
+    <div class="btn6" style="left:266px;top:421;">F3</div>
+    <div class="btn6" style="left:399px;top:421;">F4</div>
+    <div class="btn6" style="left:532px;top:421;">F5</div>
+    <div class="btn6" style="left:665px;top:421;">F6</div>
+    <div class="region dim" style="left:0;top:48;width:800px;height:384px;opacity:.3;"><b>Dialog 对话框容器</b> 覆盖主屏</div>
+  </div>
+  <p class="legend">区域坐标：Top 0,0/800×79 · Spectrum 0,59/800×101 · Freq 0,140/800×82 · Waterfall 0,202/800×221 · Buttons 0,401/800×79 · 按钮 i×133+20,421/133×59。</p>
+
+  <h3>区域说明</h3>
+  <table>
+    <tr><th>区域</th><th>创建/坐标</th><th>内容</th></tr>
+    <tr><td>Top 顶栏</td><td><code>top.py</code> · 0,0/800×79</td><td>左 Info（RX/TX 分集、模式 LSB/USB/CW…、AGC、PRE/ATT/ATU 指示）；中 S 表（RX）/ 功率表（TX 显）；右 时钟+电池。底部 2px TX 反射指示线。</td></tr>
+    <tr><td>Spectrum 频谱</td><td><code>main_spectrum.py</code> · 0,59/800×101</td><td>400 点频谱，叠加 TX/RX 游标。</td></tr>
+    <tr><td>Frequency 频率</td><td><code>main_freqs.py</code> · 0,140/800×82</td><td>中部大号 RX 频率（带千分位）；左/右标注当前 FFT 范围边界 (kHz)。</td></tr>
+    <tr><td>Waterfall 瀑布</td><td><code>main_waterfall.py</code> · 0,202/800×221</td><td>2047 点瀑布图；顶部 BandInfo 显示当前频段名（中心=FFT 频率）。</td></tr>
+    <tr><td>Pannel 解码面板</td><td><code>pannel.c</code> · 0,209/800×210</td><td>RTTY/OLIVIA 文本、CW 解码文本（仅对应模式/开启解码时可见）。</td></tr>
+    <tr><td>Buttons 软按钮</td><td><code>buttons.py</code> · 0,401/800×79</td><td>6 个 <code>lv.btn</code>（133×59），按模式分页加载动作（语音/CW/RTTY/OLIVIA/DMR/APP 页）。</td></tr>
+    <tr><td>Msg / MsgTiny</td><td><code>msg.py</code>/<code>msg_tiny.py</code></td><td>状态消息（2s）与短提示（1s）覆盖层。</td></tr>
+    <tr><td>Dialog 对话框</td><td><code>dialog.c</code> · 0,48/800×384</td><td>设置、频率输入、FT8、SSTV、录音、GPS、音频/RF 设置、蓝牙、QTH、呼号、数字输入等弹窗容器。</td></tr>
+  </table>
+
+  <h3>常见对话框及触发</h3>
+  <table>
+    <tr><th>对话框</th><th>触发方式</th></tr>
+    <tr><td>设置 Settings</td><td>APP 页 <code>Settings</code> 按钮；或长按 <code>long_app</code> 可选项</td></tr>
+    <tr><td>频率输入 Freq</td><td><code>ACTION_APP_FREQ</code> 或键盘 F9</td></tr>
+    <tr><td>FT8 / GPS / Recorder / SSTV</td><td>APP 页对应按钮（<code>main_screen_app(APP_FT8/GPS/RECORDER/SSTV)</code>）</td></tr>
+    <tr><td>音频设置 / RF 设置 / 蓝牙</td><td>APP 页对应按钮</td></tr>
+    <tr><td>QTH / Callsign</td><td><code>ACTION_APP_QTH</code> / <code>ACTION_APP_CALLSIGN</code></td></tr>
+    <tr><td>数字输入 Dialog Num</td><td>DMR 源/目标 ID、Color Code 输入</td></tr>
+  </table>
+  <div class="note">SWR 扫描对话框与 CW 消息对话框代码存在，但触发路径未接好/入口被注释（见第 5 节）。</div>
+</div>
+
+<div class="section">
+  <h2>2. 物理按钮 / 旋钮 → 功能（AXI GPIO 与 gpio-keys）</h2>
+  <p>设备树 21 位 AXI GPIO（<code>brass-common.dtsi:130-136</code>）+ <code>gpio-keys</code>（<code>pwrbtn_on</code>）+ 3 个 <code>rotary</code> 编码器（<code>brass-common.dtsi:212-234</code>）。</p>
+  <table>
+    <tr><th>物理输入</th><th>GPIO 位 / 键码</th><th>软件功能 / 行为</th><th>证据</th></tr>
+    <tr><td><b>电源键</b> pwrbtn_on</td><td>bit13 / <code>KEY_POWER</code></td><td>开机：启动校验 <code>power_boot_hold_check()</code>（默认仅记录不误关）。短按：背光开关 <code>backlight_switch()</code>。长按(≥1s)：关机 <code>power_shutdown()</code> → 落盘 <code>reboot(RB_POWER_OFF)</code>（当前设备树无断电驱动，仅 halt 不断电）。</td><td><code>power.c:109-167</code>；<code>main_screen.c:279-287</code></td></tr>
+    <tr><td><b>PTT</b> ptt_in</td><td>bit17 / <code>KEY_CONNECT</code></td><td>收发切换：<code>MSG_PTT</code> → <code>radio_set_ptt()</code> 置 <code>tx_out</code>=1、<code>preamp_on</code>=0，发 <code>MSG_TX/MSG_RX</code>。</td><td><code>keypad.c:44-46</code>；<code>radio.c:489-512</code></td></tr>
+    <tr><td><b>编码器1</b> enc1_a/b</td><td>bit6/7 → event0</td><td>音量/增益旋钮 <code>vol</code>（div=1）。旋转 → 音量/增益 ±1；其"按下"来自面板键 <code>BTN_NORTH</code>（EDIT/SELECT 切换）。</td><td><code>main.c:130</code>；<code>main_screen.c:644-662</code></td></tr>
+    <tr><td><b>编码器2</b> enc2_a/b</td><td>bit8/9 → event1</td><td>多功能旋钮 MFK（LVGL ENCODER 设备）。旋转导航/编辑 MFK 菜单；其"按下"来自面板键 <code>BTN_SOUTH</code>。</td><td><code>main.c:131</code>；<code>mfk.c:31-475</code></td></tr>
+    <tr><td><b>编码器3</b> (PS gpio0 12/13)</td><td><code>rotary@2</code> → event2</td><td>主频率调谐旋钮 <code>main</code>（div=8）。旋转 → <code>freq_shift()</code> 频率步进。无按下映射。</td><td><code>main.c:132</code>；<code>main_screen.c:534-618</code></td></tr>
+    <tr><td>preamp_on</td><td>bit19</td><td>gpiod 输出线；由 <code>radio_set_ptt</code> 控制：RX 开 / TX 关（前置放大使能）。</td><td><code>hw/gpio.c:85,194-198</code>；<code>radio.c:500,506</code></td></tr>
+    <tr><td>tx_out</td><td>bit20</td><td>gpiod 输出线；PTT 时置 1，切换 HF/VHF/UHF TX 路由继电器。</td><td><code>hw/gpio.c:86,200-223</code></td></tr>
+    <tr><td>cw_dot</td><td>bit15</td><td>设备树有定义，<b>GUI 未读取</b>；CW 点键发报由 FPGA/MicroBlaze 处理。</td><td><code>radio.c:520-521</code></td></tr>
+    <tr><td>cw_dash</td><td>bit16</td><td>同上，<b>GUI 未读取</b>。</td><td>—</td></tr>
+    <tr><td>user2/3/4/5/6/8</td><td>bit0-5</td><td>设备树"用户 LED/IO"，<b>GUI 无消费者（预留）</b>。</td><td>—</td></tr>
+    <tr><td>ext_pin1</td><td>bit14</td><td>设备树"外部引脚"，<b>GUI 未使用</b>。</td><td>—</td></tr>
+    <tr><td>adc_dith / adc_pga / adc_ofa</td><td>bit10/11/12</td><td>ADC 抖动/PGA/溢出；<b>GUI 未作为 GPIO 读</b>（ADC 经 FPGA 寄存器）。</td><td><code>fpga/adc.c</code></td></tr>
+    <tr><td>charge_pump</td><td>bit18</td><td>仅 <code>hw/xvrt.c</code> 中作为 ADF 合成器寄存器宏，<b>非 GPIO 消费</b>。</td><td><code>hw/xvrt.c:30,70</code></td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>3. 前面板矩阵键盘（TCA8418，event3/event4）</h2>
+  <p>经 <code>keypad.c</code> 映射为 <code>KEYPAD_*</code> 后送主屏状态机。</p>
+  <table>
+    <tr><th>面板键 (Linux 键码)</th><th>→ KEYPAD_*</th><th>短按</th><th>长按</th></tr>
+    <tr><td>KEY_1</td><td>KEYPAD_VOL</td><td>载入 VOL 页</td><td><code>long_vol</code> 动作</td></tr>
+    <tr><td>KEY_2</td><td>KEYPAD_MFK</td><td>载入 MFK 页</td><td><code>long_mfk</code> 动作</td></tr>
+    <tr><td>KEY_3</td><td>KEYPAD_APP</td><td>载入 APP 页</td><td><code>long_app</code> 动作</td></tr>
+    <tr><td>KEY_F1..F6</td><td>KEYPAD_F1..F6</td><td>软按钮 0..5 按下</td><td>软按钮 0..5 长按</td></tr>
+    <tr><td>KEY_A</td><td>KEYPAD_BAND_DOWN</td><td>降波段 <code>bands_change(false)</code></td><td><code>long_band_down</code></td></tr>
+    <tr><td>KEY_B</td><td>KEYPAD_BAND_UP</td><td>升波段 <code>bands_change(true)</code></td><td><code>long_band_up</code></td></tr>
+    <tr><td>KEY_C</td><td>KEYPAD_FST</td><td>频率步进+ <code>next_freq_step(true)</code></td><td>频率步进- <code>next_freq_step(false)</code></td></tr>
+    <tr><td>KEY_D</td><td>KEYPAD_MODE</td><td>下一模式 <code>radio_change_mode(NEXT)</code></td><td>子模式 <code>MODE_SUBSET</code></td></tr>
+    <tr><td>BTN_NORTH</td><td>(LV_KEY_ESC)</td><td>音量旋钮"按下"：EDIT/SELECT 切换</td><td>—</td></tr>
+    <tr><td>BTN_SOUTH</td><td>(LV_KEY_END)</td><td>MFK 旋钮"按下"：EDIT/SELECT 切换</td><td>—</td></tr>
+  </table>
+  <div class="note"><code>KEYPAD_PTT</code> 在 <code>events.h</code> 定义且 <code>main_screen.c</code> 有分支，但无生产者发出（PTT 实际走 gpio-keys <code>KEY_CONNECT</code>），该分支为死代码。</div>
+</div>
+
+<div class="section">
+  <h2>4. 屏幕软键盘 HKEY（触摸/矩阵，非 AXI GPIO）</h2>
+  <p><code>hkey.c</code> 7×5 矩阵，用于数字/频率输入与内存操作。</p>
+  <table>
+    <tr><th>键</th><th>功能</th></tr>
+    <tr><td>HKEY_1..9</td><td>内存载入/保存</td></tr>
+    <tr><td>HKEY_UP / HKEY_DOWN</td><td>频率 ±1（短按）/ 长按换 band</td></tr>
+    <tr><td>HKEY_P1..P4 / HKEY_A..D</td><td><code>options->hkeys</code> 自定义动作</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>5. 未使用 / 未确认项</h2>
+  <table>
+    <tr><th>项</th><th>状态</th></tr>
+    <tr><td>cw_dot (bit15) / cw_dash (bit16)</td><td>设备树有，GUI 未读；CW 发报在 FPGA/MB 侧，<code>radio_set_morse_key()</code> 为空桩。</td></tr>
+    <tr><td>user2..user8 (bit0-5)</td><td>预留，GUI 无消费者。</td></tr>
+    <tr><td>ext_pin1 (bit14)</td><td>未使用。</td></tr>
+    <tr><td>adc_dith/pga/ofa (bit10-12)</td><td>ADC 经 FPGA 寄存器，GUI 未作为 GPIO 读。</td></tr>
+    <tr><td>charge_pump (bit18)</td><td>仅 ADF 寄存器宏，非 GPIO。</td></tr>
+    <tr><td>SWR 扫描对话框</td><td>对话框与按钮存在，但 <code>main_screen_action()</code> 无对应分支，触发未接好。</td></tr>
+    <tr><td>CW 消息对话框</td><td>入口被注释/未启用。</td></tr>
+    <tr><td>编码器 ↔ event 编号</td><td>event0/1/2 与 enc1/enc2/gpio0 的对应按设备树节点顺序推断，实际取决于内核 probe 顺序；100% 确认需查目标机 <code>/proc/bus/input/devices</code>。</td></tr>
+  </table>
+</div>
+</body>
+</html>
