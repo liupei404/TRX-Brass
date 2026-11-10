@@ -249,19 +249,17 @@
 		};
 	};
 
-	/*
-	control_regs: axi@43c30000 {
+	trx_pwroff: syscon@43c20000 {
 		compatible = "syscon";
-		reg = <0x43C30000 0x1000>;
+		reg = <0x43C20000 0x1000>;
 	};
 
 	poweroff {
 		compatible = "syscon-poweroff";
-		regmap = <&trx_regs>;
+		regmap = <&trx_pwroff>;
 		offset = <0x00>;
 		mask = <0x1F>;
 	};
-	*/
 };
 
 &gem0 {
