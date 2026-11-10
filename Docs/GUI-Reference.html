@@ -32,30 +32,38 @@
 
 <div class="section">
   <h2>1. 主屏幕布局（按代码坐标还原）</h2>
-  <p>下图用 CSS 绝对定位按 <code>layout.py</code> 中的 <code>x/y/w/h</code> 还原主界面各区域（区域间有叠层，如解码面板覆盖在瀑布图上、消息层覆盖在中部）。</p>
+  <p>下图按 <code>layout.py</code> 的 <code>x/y/w/h</code> 还原主界面<b>默认可见层</b>（与实机照片一致）。运行时才出现的覆盖层（消息/解码面板/对话框）默认隐藏，不叠画在此图中，见下方单独说明。</p>
 
   <div class="screen">
-    <div class="region" style="left:0;top:0;width:800px;height:79px;"><b>Top 顶栏 (h79)</b> 信息 / 表 / 时钟</div>
-    <div class="region" style="left:20;top:7;width:194px;height:45px;"><b>Info</b> RX/TX · 模式 · AGC · PRE/ATT/ATU</div>
-    <div class="region" style="left:250;top:10;width:340px;height:40px;"><b>S 表 SMeter</b> -121..-33 (RX 显示)</div>
-    <div class="region dim" style="left:250;top:10;width:340px;height:40px;opacity:.25;"><b>Mic/Power 表</b> 默认隐藏，TX 时显示功率表</div>
-    <div class="region" style="left:629;top:17;width:153px;height:26px;"><b>Clock</b> HH:MM:SS · 电池</div>
-    <div class="region" style="left:0;top:59;width:800px;height:101px;"><b>Spectrum 频谱 (h101)</b> 400 点</div>
-    <div class="region" style="left:0;top:140;width:800px;height:82px;"><b>Frequency 频率 (h82)</b> 中:RX 频率 · 左/右:FFT 边界 kHz</div>
-    <div class="region" style="left:0;top:202;width:800px;height:221px;"><b>Waterfall 瀑布 (h221)</b> 2047 点 · BandInfo 频段名</div>
-    <div class="region dim" style="left:0;top:209;width:800px;height:210px;opacity:.4;"><b>Pannel 解码面板</b> 仅 RTTY/OLIVIA/CW 解码时显示</div>
-    <div class="region dim" style="left:86;top:65;width:616px;height:89px;opacity:.35;"><b>Msg</b> 状态消息覆盖层 (2s)</div>
-    <div class="region dim" style="left:185;top:132;width:430px;height:100px;opacity:.35;"><b>MsgTiny</b> 短提示 (1s)</div>
-    <div class="region" style="left:0;top:401;width:800px;height:79px;"><b>Buttons 软功能按钮区 (h79)</b> 6 个按钮，按模式分页</div>
-    <div class="btn6" style="left:0;top:421;">F1</div>
-    <div class="btn6" style="left:133px;top:421;">F2</div>
-    <div class="btn6" style="left:266px;top:421;">F3</div>
-    <div class="btn6" style="left:399px;top:421;">F4</div>
-    <div class="btn6" style="left:532px;top:421;">F5</div>
-    <div class="btn6" style="left:665px;top:421;">F6</div>
-    <div class="region dim" style="left:0;top:48;width:800px;height:384px;opacity:.3;"><b>Dialog 对话框容器</b> 覆盖主屏</div>
+    <div class="region" style="left:0;top:0;width:800px;height:79px;"><b>Top 顶栏 (0,0 / 800×79)</b></div>
+    <div class="region" style="left:20;top:7;width:194px;height:45px;"><b>Info</b> RX/TX · USB · MED<br>PRE · ATT · ATU</div>
+    <div class="region" style="left:250;top:10;width:340px;height:40px;"><b>S 表 (RX)</b> S1 3 5 7 9 +20 +40<br>TX 时同位置换成功功率表</div>
+    <div class="region" style="left:629;top:17;width:153px;height:26px;"><b>Clock</b> 01:38:22 · 电池</div>
+    <div class="region" style="left:0;top:59;width:800px;height:101px;"><b>Spectrum 频谱 (0,59 / 800×101)</b> 400 点 · TX/RX 游标</div>
+    <div class="region" style="left:0;top:140;width:800px;height:82px;"><b>Frequency (0,140 / 800×82)</b></div>
+    <div class="region" style="left:20;top:160;width:150px;height:60px;">14,050<br>FFT 左边界</div>
+    <div class="region" style="left:150;top:160;width:500px;height:40px;"><b>RX 频率</b> 14,100,000</div>
+    <div class="region" style="left:630;top:160;width:150px;height:60px;">14,150<br>FFT 右边界</div>
+    <div class="region" style="left:0;top:202;width:800px;height:221px;"><b>Waterfall 瀑布 (0,202 / 800×221)</b> 2047 点 · 顶部 24px BandInfo 频段名</div>
+    <div class="region" style="left:0;top:401;width:800px;height:79px;"><b>Buttons (0,401 / 800×79)</b> 6 按钮 · set_pos(i*133, 20)</div>
+    <div class="btn6" style="left:0;top:421;">Filter<br>Low</div>
+    <div class="btn6" style="left:133px;top:421;">Filter<br>High</div>
+    <div class="btn6" style="left:266px;top:421;">Filter<br>Transition</div>
+    <div class="btn6" style="left:399px;top:421;">AGC</div>
+    <div class="btn6" style="left:532px;top:421;">Spectrum<br>Zoom</div>
+    <div class="btn6" style="left:665px;top:421;">Reg</div>
   </div>
-  <p class="legend">区域坐标：Top 0,0/800×79 · Spectrum 0,59/800×101 · Freq 0,140/800×82 · Waterfall 0,202/800×221 · Buttons 0,401/800×79 · 按钮 i×133+20,421/133×59。</p>
+  <p class="legend">图中按钮文字为实机 VOL 页示例（对应照片：Filter Low / Filter High / Filter Transition / AGC / Spectrum Zoom / Reg）；按钮文字按当前模式页变化（语音/CW/RTTY/OLIVIA/DMR/APP，见 <code>buttons.c</code>）。对照实机照片校验：频率行中心 y≈175/480，正落在 Frequency 区(140–222)内；S 表、时钟、按钮位置均吻合。</p>
+
+  <h3>运行时按需显示的覆盖层（默认隐藏，故不画在主图中）</h3>
+  <table>
+    <tr><th>覆盖层</th><th>位置 / 尺寸</th><th>显示条件</th></tr>
+    <tr><td>Msg 状态消息</td><td>86,65 / 616×89</td><td>状态文本，2s 后自动隐藏</td></tr>
+    <tr><td>MsgTiny 短提示</td><td>185,132 / 430×100</td><td>短提示（如频率），1s 后隐藏</td></tr>
+    <tr><td>Pannel 解码面板</td><td>0,209 / 800×210（覆盖瀑布区）</td><td>仅 RTTY/OLIVIA 模式或 CW 解码开启时</td></tr>
+    <tr><td>Mic / Power 表</td><td>复用 S 表位置 250,10 / 340×40</td><td>默认隐藏；TX 时显示功率表</td></tr>
+    <tr><td>Dialog 对话框</td><td>0,48 / 800×384（覆盖主屏中部）</td><td>打开任一弹窗时</td></tr>
+  </table>
 
   <h3>区域说明</h3>
   <table>
@@ -64,10 +72,7 @@
     <tr><td>Spectrum 频谱</td><td><code>main_spectrum.py</code> · 0,59/800×101</td><td>400 点频谱，叠加 TX/RX 游标。</td></tr>
     <tr><td>Frequency 频率</td><td><code>main_freqs.py</code> · 0,140/800×82</td><td>中部大号 RX 频率（带千分位）；左/右标注当前 FFT 范围边界 (kHz)。</td></tr>
     <tr><td>Waterfall 瀑布</td><td><code>main_waterfall.py</code> · 0,202/800×221</td><td>2047 点瀑布图；顶部 BandInfo 显示当前频段名（中心=FFT 频率）。</td></tr>
-    <tr><td>Pannel 解码面板</td><td><code>pannel.c</code> · 0,209/800×210</td><td>RTTY/OLIVIA 文本、CW 解码文本（仅对应模式/开启解码时可见）。</td></tr>
     <tr><td>Buttons 软按钮</td><td><code>buttons.py</code> · 0,401/800×79</td><td>6 个 <code>lv.btn</code>（133×59），按模式分页加载动作（语音/CW/RTTY/OLIVIA/DMR/APP 页）。</td></tr>
-    <tr><td>Msg / MsgTiny</td><td><code>msg.py</code>/<code>msg_tiny.py</code></td><td>状态消息（2s）与短提示（1s）覆盖层。</td></tr>
-    <tr><td>Dialog 对话框</td><td><code>dialog.c</code> · 0,48/800×384</td><td>设置、频率输入、FT8、SSTV、录音、GPS、音频/RF 设置、蓝牙、QTH、呼号、数字输入等弹窗容器。</td></tr>
   </table>
 
   <h3>常见对话框及触发</h3>
