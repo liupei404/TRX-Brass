@@ -338,10 +338,14 @@ FTP 连接超时（IPv6 / IPv4 都不通）。同样从 `sources.buildroot.net/u
 `package/uboot-tools/uboot-tools.hash` 一致）放进 `dl/uboot-tools/`，再终止卡住的
 `wget` 让 `dl-wrapper` 换源即可；`make` 未退出。
 
-> 进度（2026-11-10 06:13）：续编约 10 分钟，日志约 62 MB、1433 个 `>>>` 阶段；
-> U-Boot 产物已生成，`usbmount` / `host-python-markupsafe` 等已过。续编日志无
-> 新的致命错误。`images/` 里已有 `boot.bin` / `u-boot.bin` / `u-boot.img` 和蓝牙
-> 固件，但 `sdcard.img` 仍未生成，还要等内核、GUI、rootfs 打包和 genimage。
+> **首次全编译成功完成（2026-11-10 07:00）**：最久约 3 小时 50 分（03:10 起，含一次
+> U-Boot 续编与若干下载换源），日志约 64 MB、2500+ 个 `>>>` 阶段，无致命错误。
+> `images/` 最终产物齐全：`sdcard.img`（1.64 GB，整卡镜像，直接 `dd` 烧录）、
+> `uImage`（4.6 MB）、`brass.dtb`、`system.bit`（2.5 MB，仓库内真实 bitstream，无需
+> Vivado）、`rootfs.ext2` / `rootfs.tar`、`boot.bin` / `u-boot.bin` / `u-boot.img` /
+> `uboot-env.bin`。全程未触发 `make clean`；之后只改 `Firmware/gui/`，用
+> `make brass-gui-dirclean && make -j2` 几分钟即可重出 `sdcard.img`。取用与烧录见
+> 本节下半部分（scp / `python3 -m http.server` 与 `dd` 命令）。
 
 ### 第一次必须全编译吗？以后只改 GUI 呢
 
